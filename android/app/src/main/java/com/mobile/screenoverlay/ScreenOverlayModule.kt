@@ -4,42 +4,39 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
-import android.hardware.display.DisplayManager
-import android.hardware.display.VirtualDisplay
-import android.media.MediaRecorder
-import android.media.projection.MediaProjection
-import android.media.projection.MediaProjectionManager
 import android.os.Build
-import android.os.Environment
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.WindowManager
 import android.widget.Button
 import com.facebook.react.bridge.*
 import com.facebook.react.modules.core.DeviceEventManagerModule
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
+import android.media.projection.MediaProjectionManager
 
 class ScreenOverlayModule(reactContext: ReactApplicationContext) :
-    ReactContextBaseJavaModule(reactContext) {
+    ReactContextBaseJavaModule(reactContext), ActivityEventListener {
 
     companion object {
         const val REQUEST_MEDIA_PROJECTION = 1001
         const val NAME = "ScreenOverlayModule"
+        const val EVENT_RECORDING_STATE = "onRecordingStateChanged"
+
+        // Purple semi-transparent overlay color (matches iOS)
+        private const val COLOR_IDLE = 0xCC8A2BE2.toInt()
+        private const val COLOR_RECORDING = 0xCCBA55D3.toInt()
     }
 
     private var windowManager: WindowManager? = null
     private var overlayButton: Button? = null
     private var mediaProjectionManager: MediaProjectionManager? = null
-    private var mediaProjection: MediaProjection? = null
-    private var virtualDisplay: VirtualDisplay? = null
-    private var mediaRecorder: MediaRecorder? = null
     private var isRecording = false
-    private var outputFilePath: String? = null
 
     // Pending promise while waiting for permission result
     private var pendingResolve: Promise? = null
+
+    init {
+        reactContext.addActivityEventListener(this)
+    }
 
     override fun getName() = NAME
 
@@ -47,7 +44,7 @@ class ScreenOverlayModule(reactContext: ReactApplicationContext) :
 
     @ReactMethod
     fun showOverlay(promise: Promise) {
-        val activity = currentActivity ?: run {
+        val activity = reactApplicationContext.currentActivity ?: run {
             promise.reject("NO_ACTIVITY", "No activity available")
             return
         }
@@ -83,9 +80,9 @@ class ScreenOverlayModule(reactContext: ReactApplicationContext) :
             }
 
             val button = Button(reactApplicationContext).apply {
-                text = "REC"
+                text = if (isRecording) "STOP" else "REC"
                 textSize = 14f
-                setBackgroundColor(0xCCFF4444.toInt())
+                setBackgroundColor(if (isRecording) COLOR_RECORDING else COLOR_IDLE)
                 setTextColor(0xFFFFFFFF.toInt())
             }
 
@@ -123,7 +120,7 @@ class ScreenOverlayModule(reactContext: ReactApplicationContext) :
 
     @ReactMethod
     fun hideOverlay(promise: Promise) {
-        currentActivity?.runOnUiThread {
+        reactApplicationContext.currentActivity?.runOnUiThread {
             overlayButton?.let { windowManager?.removeView(it) }
             overlayButton = null
             promise.resolve("hidden")
@@ -140,65 +137,57 @@ class ScreenOverlayModule(reactContext: ReactApplicationContext) :
     private fun requestProjectionPermission() {
         mediaProjectionManager = reactApplicationContext
             .getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        val activity = reactApplicationContext.currentActivity
+        if (activity == null) {
+            pendingResolve?.reject("NO_ACTIVITY", "No activity available")
+            pendingResolve = null
+            return
+        }
         val intent = mediaProjectionManager!!.createScreenCaptureIntent()
-        currentActivity?.startActivityForResult(intent, REQUEST_MEDIA_PROJECTION)
+        activity.startActivityForResult(intent, REQUEST_MEDIA_PROJECTION)
     }
 
-    fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+    override fun onActivityResult(activity: Activity, requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode != REQUEST_MEDIA_PROJECTION) return
         if (resultCode != Activity.RESULT_OK || data == null) {
             pendingResolve?.reject("CANCELLED", "User cancelled screen capture")
             pendingResolve = null
             return
         }
-        mediaProjection = mediaProjectionManager?.getMediaProjection(resultCode, data)
-        startRecordingInternal()
+
+        // Start the foreground service with the projection result.
+        val ctx = reactApplicationContext
+        val serviceIntent = Intent(ctx, RecordingService::class.java).apply {
+            action = RecordingService.ACTION_START
+            putExtra(RecordingService.EXTRA_RESULT_CODE, resultCode)
+            putExtra(RecordingService.EXTRA_RESULT_DATA, data)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            ctx.startForegroundService(serviceIntent)
+        } else {
+            ctx.startService(serviceIntent)
+        }
+
+        isRecording = true
+        updateOverlayState()
+        emitRecordingState(true)
+
         pendingResolve?.resolve("recording_started")
         pendingResolve = null
     }
 
-    @ReactMethod
-    fun startRecording(promise: Promise) {
-        pendingResolve = promise
-        requestProjectionPermission()
+    override fun onNewIntent(intent: Intent) {
+        // no-op
     }
 
-    private fun startRecordingInternal() {
-        val projection = mediaProjection ?: return
-        val metrics = reactApplicationContext.resources.displayMetrics
-        val width = metrics.widthPixels
-        val height = metrics.heightPixels
-        val density = metrics.densityDpi
-
-        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-        val dir = reactApplicationContext.getExternalFilesDir(Environment.DIRECTORY_MOVIES)
-        val file = File(dir, "recording_$timestamp.mp4")
-        outputFilePath = file.absolutePath
-
-        mediaRecorder = MediaRecorder().apply {
-            setVideoSource(MediaRecorder.VideoSource.SURFACE)
-            setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
-            setVideoEncoder(MediaRecorder.VideoEncoder.H264)
-            setVideoSize(width, height)
-            setVideoFrameRate(30)
-            setVideoEncodingBitRate(5 * 1024 * 1024)
-            setOutputFile(outputFilePath)
-            prepare()
+    @ReactMethod
+    fun startRecording(promise: Promise) {
+        if (isRecording) {
+            promise.resolve("already_recording")
+            return
         }
-
-        virtualDisplay = projection.createVirtualDisplay(
-            "ScreenOverlayCapture", width, height, density,
-            DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-            mediaRecorder!!.surface, null, null
-        )
-
-        mediaRecorder!!.start()
-        isRecording = true
-
-        currentActivity?.runOnUiThread {
-            overlayButton?.text = "STOP"
-            overlayButton?.setBackgroundColor(0xCC44FF44.toInt())
-        }
+        pendingResolve = promise
+        requestProjectionPermission()
     }
 
     @ReactMethod
@@ -208,36 +197,37 @@ class ScreenOverlayModule(reactContext: ReactApplicationContext) :
             return
         }
 
+        val ctx = reactApplicationContext
+        val stopIntent = Intent(ctx, RecordingService::class.java).apply {
+            action = RecordingService.ACTION_STOP
+        }
         try {
-            mediaRecorder?.stop()
-            mediaRecorder?.release()
-        } catch (e: Exception) {
-            // ignore stop errors
+            ctx.startService(stopIntent)
+        } catch (_: Exception) {
+            ctx.stopService(Intent(ctx, RecordingService::class.java))
         }
 
-        virtualDisplay?.release()
-        mediaProjection?.stop()
-
-        mediaRecorder = null
-        virtualDisplay = null
-        mediaProjection = null
         isRecording = false
+        updateOverlayState()
+        emitRecordingState(false)
 
-        currentActivity?.runOnUiThread {
-            overlayButton?.text = "REC"
-            overlayButton?.setBackgroundColor(0xCCFF4444.toInt())
-        }
-
-        promise?.resolve(outputFilePath)
-
-        // Notify JS with the saved file path
-        sendEvent("onRecordingSaved", outputFilePath ?: "")
+        promise?.resolve("stopped")
     }
 
-    private fun sendEvent(eventName: String, data: String) {
+    private fun updateOverlayState() {
+        reactApplicationContext.currentActivity?.runOnUiThread {
+            overlayButton?.text = if (isRecording) "STOP" else "REC"
+            overlayButton?.setBackgroundColor(if (isRecording) COLOR_RECORDING else COLOR_IDLE)
+        }
+    }
+
+    private fun emitRecordingState(recording: Boolean) {
+        val payload = Arguments.createMap().apply {
+            putBoolean("isRecording", recording)
+        }
         reactApplicationContext
             .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-            .emit(eventName, data)
+            .emit(EVENT_RECORDING_STATE, payload)
     }
 
     private fun canDrawOverlays(): Boolean {
@@ -245,4 +235,11 @@ class ScreenOverlayModule(reactContext: ReactApplicationContext) :
             android.provider.Settings.canDrawOverlays(reactApplicationContext)
         } else true
     }
+
+    // Required for RN event emitters
+    @ReactMethod
+    fun addListener(eventName: String) { /* no-op */ }
+
+    @ReactMethod
+    fun removeListeners(count: Int) { /* no-op */ }
 }

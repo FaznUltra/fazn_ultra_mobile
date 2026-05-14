@@ -10,27 +10,21 @@ if (!ScreenOverlayModule) {
 
 const emitter = new NativeEventEmitter(ScreenOverlayModule);
 
+export type RecordingStateEvent = {
+  isRecording: boolean;
+  stopping?: boolean;
+  filePath?: string;
+};
+
 export const ScreenOverlay = {
-  /** Show the floating overlay button on screen */
   show: (): Promise<string> => ScreenOverlayModule.showOverlay(),
-
-  /** Hide and remove the floating overlay button */
   hide: (): Promise<string> => ScreenOverlayModule.hideOverlay(),
-
-  /** Start screen recording (Android: triggers permission dialog) */
   startRecording: (): Promise<string> => ScreenOverlayModule.startRecording(),
-
-  /** Stop recording and save to device. Resolves with the saved file path. */
   stopRecording: (): Promise<string> => ScreenOverlayModule.stopRecording(),
 
-  /**
-   * Android only: listen for when a recording is saved.
-   * iOS uses the native ReplayKit preview sheet instead.
-   */
-  onRecordingSaved: (callback: (filePath: string) => void) => {
-    if (Platform.OS === 'android') {
-      return emitter.addListener('onRecordingSaved', callback);
-    }
-    return { remove: () => {} };
+  // Single event fired whenever recording starts or stops — from ANY source (widget or JS button)
+  onRecordingStateChanged: (callback: (event: RecordingStateEvent) => void) => {
+    const eventName = Platform.OS === 'android' ? 'onRecordingStateChanged' : 'onRecordingStateChanged';
+    return emitter.addListener(eventName, callback);
   },
 };
