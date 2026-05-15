@@ -22,7 +22,11 @@ export type TabParamList = {
 /** Each tab root stack — sub-screens within a tab go here */
 export type HomeStackParamList = { HomeMain: undefined };
 export type ArenaStackParamList = { ArenaMain: undefined };
-export type FriendsStackParamList = { FriendsMain: undefined };
+export type FriendsStackParamList = {
+  FriendsList: undefined;
+  FriendSearch: undefined;
+  FriendRequests: undefined;
+};
 export type ProfileStackParamList = { ProfileMain: undefined };
 
 export type AuthScreenProps<T extends keyof AuthStackParamList> =
