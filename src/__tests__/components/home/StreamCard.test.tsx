@@ -41,6 +41,7 @@ describe('StreamCard', () => {
       <StreamCard
         stream={stream}
         isPlaying={false}
+        onPress={jest.fn()}
         onLike={jest.fn()}
         onShare={jest.fn()}
         onHostPress={jest.fn()}
@@ -57,6 +58,7 @@ describe('StreamCard', () => {
       <StreamCard
         stream={stream}
         isPlaying
+        onPress={jest.fn()}
         onLike={jest.fn()}
         onShare={jest.fn()}
         onHostPress={jest.fn()}
@@ -75,6 +77,7 @@ describe('StreamCard', () => {
       <StreamCard
         stream={stream}
         isPlaying={false}
+        onPress={jest.fn()}
         onLike={onLike}
         onShare={onShare}
         onHostPress={onHostPress}

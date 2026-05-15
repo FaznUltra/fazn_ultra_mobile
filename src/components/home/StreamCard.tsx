@@ -61,6 +61,7 @@ function PlayIcon() {
 interface Props {
   stream: LiveStream;
   isPlaying: boolean;
+  onPress: () => void;
   onLike: () => void;
   onShare: () => void;
   onHostPress: () => void;
@@ -70,6 +71,7 @@ interface Props {
 export function StreamCard({
   stream,
   isPlaying,
+  onPress,
   onLike,
   onShare,
   onHostPress,
@@ -102,6 +104,13 @@ export function StreamCard({
   }, [isPlaying, glow]);
 
   return (
+    <TouchableOpacity
+      activeOpacity={0.95}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`Watch ${stream.title}`}
+      testID={testID}
+    >
     <Animated.View
       style={[
         styles.card,
@@ -112,7 +121,6 @@ export function StreamCard({
           opacity: glow,
         },
       ]}
-      testID={testID}
     >
       {/* Top overlay */}
       <View style={styles.topOverlay}>
@@ -205,6 +213,7 @@ export function StreamCard({
         </View>
       </View>
     </Animated.View>
+    </TouchableOpacity>
   );
 }
 
