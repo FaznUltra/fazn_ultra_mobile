@@ -2,7 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { TabParamList } from './types';
 import { TabBar } from '../components/navigation/TabBar';
-import { HomeScreen } from '../screens/app/HomeScreen';
+import { HomeNavigator } from './HomeNavigator';
 import { ArenaScreen } from '../screens/app/ArenaScreen';
 import { FriendsNavigator } from './FriendsNavigator';
 import { ProfileScreen } from '../screens/app/ProfileScreen';
@@ -21,7 +21,7 @@ export function AppNavigator() {
       tabBar={(props) => <TabBar {...props} />}
       screenOptions={{ headerShown: false }}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Home" component={HomeNavigator} />
       <Tab.Screen name="Arena" component={ArenaScreen} />
       <Tab.Screen name="Create" component={CreatePlaceholder} />
       <Tab.Screen name="Friends" component={FriendsNavigator} />

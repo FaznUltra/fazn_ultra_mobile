@@ -20,7 +20,14 @@ export type TabParamList = {
 };
 
 /** Each tab root stack — sub-screens within a tab go here */
-export type HomeStackParamList = { HomeMain: undefined };
+export type HomeStackParamList = {
+  HomeMain: undefined;
+  GlobalSearch: undefined;
+  Notifications: undefined;
+  UserPublicProfile: { userId: string; username: string };
+  ChallengeDetail: { challengeId: string };
+  StreamDetail: { streamId: string };
+};
 export type ArenaStackParamList = { ArenaMain: undefined };
 export type FriendsStackParamList = {
   FriendsList: undefined;

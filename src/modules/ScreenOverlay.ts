@@ -1,10 +1,14 @@
 import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
 
-const { ScreenOverlayModule } = NativeModules;
+let ScreenOverlayModule: Record<string, (...args: unknown[]) => Promise<string>> | null = null;
+try {
+  ScreenOverlayModule = NativeModules.ScreenOverlayModule ?? null;
+} catch {
+  // Module not linked in this build (simulator or non-overlay build)
+}
 
-// Native module is only available on physical devices (not simulator)
 const isAvailable = !!ScreenOverlayModule;
-const emitter = isAvailable ? new NativeEventEmitter(ScreenOverlayModule) : null;
+const emitter = isAvailable ? new NativeEventEmitter(ScreenOverlayModule as never) : null;
 
 export type RecordingStateEvent = {
   isRecording: boolean;
