@@ -1,4 +1,5 @@
 jest.mock('../lib/api');
+jest.mock('../lib/oauth', () => ({ startOAuth: jest.fn() }));
 jest.mock('../store/auth.store');
 
 import React from 'react';
@@ -14,7 +15,11 @@ import { useAuthStore } from '../store/auth.store';
 
 const mockLogin = (useAuthStore as any).getState().login as jest.Mock;
 
-const navigation = { navigate: jest.fn() } as any;
+const navigation = {
+  navigate: jest.fn(),
+  goBack: jest.fn(),
+  canGoBack: jest.fn(() => true),
+} as any;
 const route = { params: undefined } as any;
 
 beforeEach(() => {
@@ -87,6 +92,19 @@ describe('LoginScreen', () => {
       expect(screen.getByText('Incorrect email or password.')).toBeTruthy(),
     );
     expect(mockLogin).not.toHaveBeenCalled();
+  });
+
+  it('renders a back button and social sign-in buttons', () => {
+    renderScreen();
+    expect(screen.getByTestId('login-back')).toBeTruthy();
+    expect(screen.getByTestId('login-google')).toBeTruthy();
+    expect(screen.getByTestId('login-apple')).toBeTruthy();
+  });
+
+  it('goes back to Welcome from the back button', () => {
+    renderScreen();
+    fireEvent.press(screen.getByTestId('login-back'));
+    expect(navigation.goBack).toHaveBeenCalled();
   });
 
   it('navigates to Register and ForgotPassword from links', () => {

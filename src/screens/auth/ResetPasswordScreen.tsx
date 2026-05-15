@@ -3,11 +3,11 @@ import { View, Text, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { AuthScreenProps } from '../../navigation/types';
 import { KeyboardAvoid } from '../../components/ui/KeyboardAvoid';
-import { AuthCard } from '../../components/AuthCard';
 import { OtpInput } from '../../components/ui/OtpInput';
 import { FormField } from '../../components/ui/FormField';
 import { Button } from '../../components/ui/Button';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
+import { BackButton } from '../../components/ui/BackButton';
 import { authApi, ApiError } from '../../lib/api';
 import {
   validateOtp,
@@ -32,6 +32,11 @@ export function ResetPasswordScreen({
   }>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const goBack = useCallback(() => {
+    if (navigation.canGoBack?.()) navigation.goBack();
+    else navigation.navigate('Login');
+  }, [navigation]);
 
   const handleSubmit = useCallback(async () => {
     setFormError(null);
@@ -68,51 +73,55 @@ export function ResetPasswordScreen({
   return (
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoid contentContainerStyle={styles.content}>
-        <AuthCard
+        <BackButton onPress={goBack} testID="reset-back" />
+
+        <View style={styles.header}>
+          <Text style={styles.title}>Reset password</Text>
+          <Text style={styles.subtitle}>
+            Enter the code sent to {email} and choose a new password
+          </Text>
+        </View>
+
+        <ErrorBanner message={formError} testID="reset-error" />
+
+        <Text style={styles.label}>Verification code</Text>
+        <OtpInput
+          value={otp}
+          onChange={setOtp}
+          error={!!errors.otp}
+          testID="reset-otp"
+        />
+        {errors.otp ? (
+          <Text style={styles.fieldError}>{errors.otp}</Text>
+        ) : null}
+
+        <View style={styles.spacer} />
+
+        <FormField
+          label="New password"
+          value={password}
+          onChangeText={setPassword}
+          error={errors.password}
+          secureTextEntry
+          placeholder="At least 8 characters"
+          testID="reset-password"
+        />
+        <FormField
+          label="Confirm new password"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          error={errors.confirmPassword}
+          secureTextEntry
+          placeholder="Re-enter your password"
+          testID="reset-confirmPassword"
+        />
+
+        <Button
           title="Reset password"
-          subtitle={`Enter the code sent to ${email} and choose a new password`}
-        >
-          <ErrorBanner message={formError} testID="reset-error" />
-
-          <Text style={styles.label}>Verification code</Text>
-          <OtpInput
-            value={otp}
-            onChange={setOtp}
-            error={!!errors.otp}
-            testID="reset-otp"
-          />
-          {errors.otp ? (
-            <Text style={styles.fieldError}>{errors.otp}</Text>
-          ) : null}
-
-          <View style={styles.spacer} />
-
-          <FormField
-            label="New password"
-            value={password}
-            onChangeText={setPassword}
-            error={errors.password}
-            secureTextEntry
-            placeholder="At least 8 characters"
-            testID="reset-password"
-          />
-          <FormField
-            label="Confirm new password"
-            value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            error={errors.confirmPassword}
-            secureTextEntry
-            placeholder="Re-enter your password"
-            testID="reset-confirmPassword"
-          />
-
-          <Button
-            title="Reset password"
-            onPress={handleSubmit}
-            loading={loading}
-            testID="reset-submit"
-          />
-        </AuthCard>
+          onPress={handleSubmit}
+          loading={loading}
+          testID="reset-submit"
+        />
       </KeyboardAvoid>
     </SafeAreaView>
   );
@@ -120,7 +129,20 @@ export function ResetPasswordScreen({
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, justifyContent: 'center' },
+  content: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingVertical: spacing.md,
+    justifyContent: 'center',
+  },
+  header: { marginTop: spacing.md, marginBottom: spacing.lg },
+  title: {
+    color: colors.textPrimary,
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: spacing.xs,
+  },
+  subtitle: { color: colors.textSecondary, fontSize: 15 },
   label: {
     color: colors.textSecondary,
     fontSize: 14,

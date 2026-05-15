@@ -1,4 +1,5 @@
 jest.mock('../lib/api');
+jest.mock('../lib/oauth', () => ({ startOAuth: jest.fn() }));
 jest.mock('../store/auth.store');
 
 import React from 'react';
@@ -11,7 +12,11 @@ import {
 import { RegisterScreen } from '../screens/auth/RegisterScreen';
 import { authApi } from '../lib/api';
 
-const navigation = { navigate: jest.fn() } as any;
+const navigation = {
+  navigate: jest.fn(),
+  goBack: jest.fn(),
+  canGoBack: jest.fn(() => true),
+} as any;
 const route = { params: undefined } as any;
 
 beforeEach(() => {
@@ -34,6 +39,17 @@ function fillValidForm() {
   );
 }
 
+// Walk the 3-step wizard to the final step by filling each step and
+// pressing Continue.
+function advanceToFinalStep() {
+  fireEvent.changeText(screen.getByTestId('register-firstName'), 'Jane');
+  fireEvent.changeText(screen.getByTestId('register-lastName'), 'Doe');
+  fireEvent.press(screen.getByTestId('register-submit'));
+  fireEvent.changeText(screen.getByTestId('register-email'), 'jane@doe.com');
+  fireEvent.changeText(screen.getByTestId('register-username'), 'janedoe');
+  fireEvent.press(screen.getByTestId('register-submit'));
+}
+
 describe('RegisterScreen', () => {
   it('renders all form fields', () => {
     renderScreen();
@@ -45,19 +61,28 @@ describe('RegisterScreen', () => {
     expect(screen.getByTestId('register-confirmPassword')).toBeTruthy();
   });
 
-  it('shows required errors on empty submit', async () => {
+  it('renders a back button and social sign-in buttons', () => {
+    renderScreen();
+    expect(screen.getByTestId('register-back')).toBeTruthy();
+    expect(screen.getByTestId('register-google')).toBeTruthy();
+    expect(screen.getByTestId('register-apple')).toBeTruthy();
+    expect(screen.getByTestId('register-progress')).toBeTruthy();
+  });
+
+  it('shows required errors on the first step when empty', async () => {
     renderScreen();
     fireEvent.press(screen.getByTestId('register-submit'));
     await waitFor(() => {
       expect(screen.getByText('First name is required')).toBeTruthy();
-      expect(screen.getByText('Email is required')).toBeTruthy();
+      expect(screen.getByText('Last name is required')).toBeTruthy();
     });
     expect(authApi.register).not.toHaveBeenCalled();
   });
 
-  it('flags a password mismatch', async () => {
+  it('flags a password mismatch on the final step', async () => {
     renderScreen();
-    fillValidForm();
+    advanceToFinalStep();
+    fireEvent.changeText(screen.getByTestId('register-password'), 'password123');
     fireEvent.changeText(
       screen.getByTestId('register-confirmPassword'),
       'different',
@@ -69,9 +94,12 @@ describe('RegisterScreen', () => {
     expect(authApi.register).not.toHaveBeenCalled();
   });
 
-  it('rejects an invalid username', async () => {
+  it('rejects an invalid username on the account step', async () => {
     renderScreen();
-    fillValidForm();
+    fireEvent.changeText(screen.getByTestId('register-firstName'), 'Jane');
+    fireEvent.changeText(screen.getByTestId('register-lastName'), 'Doe');
+    fireEvent.press(screen.getByTestId('register-submit'));
+    fireEvent.changeText(screen.getByTestId('register-email'), 'jane@doe.com');
     fireEvent.changeText(screen.getByTestId('register-username'), 'no');
     fireEvent.press(screen.getByTestId('register-submit'));
     await waitFor(() =>

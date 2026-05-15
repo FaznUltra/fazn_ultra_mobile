@@ -1,10 +1,11 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { AuthScreenProps } from '../../navigation/types';
 import { Button } from '../../components/ui/Button';
 import { SocialButton } from '../../components/ui/SocialButton';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
+import { Divider } from '../../components/ui/Divider';
 import { startOAuth } from '../../lib/oauth';
 import { useAuthStore } from '../../store/auth.store';
 import { colors, spacing } from '../../theme';
@@ -34,7 +35,7 @@ export function WelcomeScreen({ navigation }: AuthScreenProps<'Welcome'>) {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.container}>
+      <View style={styles.content}>
         <View style={styles.brand}>
           <Text style={styles.logo}>FAZN</Text>
           <Text style={styles.tagline}>Capture. Replay. Improve.</Text>
@@ -59,27 +60,26 @@ export function WelcomeScreen({ navigation }: AuthScreenProps<'Welcome'>) {
             testID="welcome-apple"
           />
 
-          <View style={styles.divider}>
-            <View style={styles.line} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.line} />
-          </View>
+          <Divider />
 
           <Button
-            title="Sign in"
+            title="Sign in with email"
             variant="outline"
             onPress={() => navigation.navigate('Login')}
             disabled={busy !== null}
             testID="welcome-signin"
           />
-          <View style={styles.gap} />
-          <Button
-            title="Create account"
-            variant="primary"
+
+          <TouchableOpacity
             onPress={() => navigation.navigate('Register')}
             disabled={busy !== null}
-            testID="welcome-create"
-          />
+            accessibilityRole="button"
+            style={styles.createWrap}
+          >
+            <Text style={styles.createText}>
+              New to FAZN? <Text style={styles.createLink}>Create account</Text>
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
@@ -88,13 +88,16 @@ export function WelcomeScreen({ navigation }: AuthScreenProps<'Welcome'>) {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  container: {
+  content: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
-    justifyContent: 'space-between',
+    paddingHorizontal: 20,
     paddingVertical: spacing.xl,
   },
-  brand: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  brand: {
+    flex: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   logo: {
     color: colors.primaryLight,
     fontSize: 48,
@@ -106,17 +109,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: spacing.sm,
   },
-  actions: { paddingBottom: spacing.md },
+  actions: { flex: 6, justifyContent: 'flex-end', paddingBottom: spacing.md },
   gap: { height: spacing.md },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: spacing.lg,
-  },
-  line: { flex: 1, height: 1, backgroundColor: colors.border },
-  dividerText: {
-    color: colors.textMuted,
-    marginHorizontal: spacing.md,
-    fontSize: 14,
-  },
+  createWrap: { alignSelf: 'center', marginTop: spacing.md, padding: spacing.sm },
+  createText: { color: colors.textSecondary, fontSize: 14 },
+  createLink: { color: colors.primaryLight, fontWeight: '600' },
 });

@@ -11,7 +11,11 @@ import {
 import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen';
 import { authApi } from '../lib/api';
 
-const navigation = { navigate: jest.fn() } as any;
+const navigation = {
+  navigate: jest.fn(),
+  goBack: jest.fn(),
+  canGoBack: jest.fn(() => true),
+} as any;
 const route = { params: undefined } as any;
 
 beforeEach(() => {

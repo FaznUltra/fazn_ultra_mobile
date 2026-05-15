@@ -2,13 +2,9 @@ import { NativeModules, NativeEventEmitter, Platform } from 'react-native';
 
 const { ScreenOverlayModule } = NativeModules;
 
-if (!ScreenOverlayModule) {
-  throw new Error(
-    'ScreenOverlayModule not found. Make sure you have rebuilt the native app after adding the module.'
-  );
-}
-
-const emitter = new NativeEventEmitter(ScreenOverlayModule);
+// Native module is only available on physical devices (not simulator)
+const isAvailable = !!ScreenOverlayModule;
+const emitter = isAvailable ? new NativeEventEmitter(ScreenOverlayModule) : null;
 
 export type RecordingStateEvent = {
   isRecording: boolean;
@@ -16,14 +12,17 @@ export type RecordingStateEvent = {
   filePath?: string;
 };
 
-export const ScreenOverlay = {
-  show: (): Promise<string> => ScreenOverlayModule.showOverlay(),
-  hide: (): Promise<string> => ScreenOverlayModule.hideOverlay(),
-  startRecording: (): Promise<string> => ScreenOverlayModule.startRecording(),
-  stopRecording: (): Promise<string> => ScreenOverlayModule.stopRecording(),
+const unavailable = () => Promise.reject(new Error('ScreenOverlay not available on this device'));
 
-  // Single event fired whenever recording starts or stops — from ANY source (widget or JS button)
+export const ScreenOverlay = {
+  isAvailable,
+  show: (): Promise<string> => isAvailable ? ScreenOverlayModule.showOverlay() : unavailable(),
+  hide: (): Promise<string> => isAvailable ? ScreenOverlayModule.hideOverlay() : unavailable(),
+  startRecording: (): Promise<string> => isAvailable ? ScreenOverlayModule.startRecording() : unavailable(),
+  stopRecording: (): Promise<string> => isAvailable ? ScreenOverlayModule.stopRecording() : unavailable(),
+
   onRecordingStateChanged: (callback: (event: RecordingStateEvent) => void) => {
+    if (!emitter) return { remove: () => {} };
     const eventName = Platform.OS === 'android' ? 'onRecordingStateChanged' : 'onRecordingStateChanged';
     return emitter.addListener(eventName, callback);
   },

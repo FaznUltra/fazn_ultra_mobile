@@ -1,12 +1,21 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "FAZN",
+    "slug": "fazn",
     "version": "1.0.0",
     "scheme": "fazn",
     "plugins": [
       "expo-secure-store",
       "expo-web-browser"
-    ]
+    ],
+    "ios": {
+      "bundleIdentifier": "com.fazn.musabello.app",
+      "buildNumber": "1",
+      "appleTeamId": "TY2W2ZDP3W"
+    },
+    "android": {
+      "package": "com.fazn.musabello.app",
+      "versionCode": 1
+    }
   }
 }

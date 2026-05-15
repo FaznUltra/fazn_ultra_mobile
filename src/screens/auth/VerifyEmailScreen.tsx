@@ -3,10 +3,10 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { AuthScreenProps } from '../../navigation/types';
 import { KeyboardAvoid } from '../../components/ui/KeyboardAvoid';
-import { AuthCard } from '../../components/AuthCard';
 import { OtpInput } from '../../components/ui/OtpInput';
 import { Button } from '../../components/ui/Button';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
+import { BackButton } from '../../components/ui/BackButton';
 import { authApi, ApiError } from '../../lib/api';
 import { consumePendingAuth } from '../../lib/pendingTokens';
 import { useAuthStore } from '../../store/auth.store';
@@ -17,6 +17,7 @@ const RESEND_COOLDOWN = 60;
 
 export function VerifyEmailScreen({
   route,
+  navigation,
 }: AuthScreenProps<'VerifyEmail'>) {
   const { email } = route.params;
   const login = useAuthStore((s) => s.login);
@@ -27,6 +28,11 @@ export function VerifyEmailScreen({
   const [loading, setLoading] = useState(false);
   const [cooldown, setCooldown] = useState(RESEND_COOLDOWN);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const goBack = useCallback(() => {
+    if (navigation.canGoBack?.()) navigation.goBack();
+    else navigation.navigate('Welcome');
+  }, [navigation]);
 
   useEffect(() => {
     timerRef.current = setInterval(() => {
@@ -54,7 +60,6 @@ export function VerifyEmailScreen({
     setLoading(true);
     try {
       await authApi.verifyEmail(email, otp);
-      // Email verified — now persist the tokens held since registration.
       const pending = consumePendingAuth();
       if (pending) {
         await login(
@@ -101,41 +106,43 @@ export function VerifyEmailScreen({
   return (
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoid contentContainerStyle={styles.content}>
-        <AuthCard
-          title="Verify your email"
-          subtitle={`We sent a 6-digit code to ${email}`}
+        <BackButton onPress={goBack} testID="verify-back" />
+
+        <View style={styles.header}>
+          <Text style={styles.title}>Verify your email</Text>
+          <Text style={styles.subtitle}>
+            We sent a 6-digit code to {email}
+          </Text>
+        </View>
+
+        <ErrorBanner message={formError} testID="verify-error" />
+
+        <OtpInput
+          value={otp}
+          onChange={setOtp}
+          error={!!otpError}
+          testID="verify-otp"
+        />
+        {otpError ? <Text style={styles.fieldError}>{otpError}</Text> : null}
+
+        <View style={styles.spacer} />
+        <Button
+          title="Verify email"
+          onPress={handleVerify}
+          loading={loading}
+          testID="verify-submit"
+        />
+
+        <TouchableOpacity
+          onPress={handleResend}
+          disabled={cooldown > 0}
+          style={styles.resend}
+          accessibilityRole="button"
         >
-          <ErrorBanner message={formError} testID="verify-error" />
-
-          <OtpInput
-            value={otp}
-            onChange={setOtp}
-            error={!!otpError}
-            testID="verify-otp"
-          />
-          {otpError ? <Text style={styles.fieldError}>{otpError}</Text> : null}
-
-          <View style={styles.spacer} />
-          <Button
-            title="Verify email"
-            onPress={handleVerify}
-            loading={loading}
-            testID="verify-submit"
-          />
-
-          <TouchableOpacity
-            onPress={handleResend}
-            disabled={cooldown > 0}
-            style={styles.resend}
-            accessibilityRole="button"
-          >
-            <Text style={cooldown > 0 ? styles.muted : styles.link}>
-              {cooldown > 0
-                ? `Resend code in ${cooldown}s`
-                : 'Resend code'}
-            </Text>
-          </TouchableOpacity>
-        </AuthCard>
+          <Text style={cooldown > 0 ? styles.muted : styles.link}>
+            {cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend code'}
+          </Text>
+        </TouchableOpacity>
       </KeyboardAvoid>
     </SafeAreaView>
   );
@@ -143,7 +150,20 @@ export function VerifyEmailScreen({
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, justifyContent: 'center' },
+  content: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingVertical: spacing.md,
+    justifyContent: 'center',
+  },
+  header: { marginTop: spacing.md, marginBottom: spacing.lg },
+  title: {
+    color: colors.textPrimary,
+    fontSize: 28,
+    fontWeight: '700',
+    marginBottom: spacing.xs,
+  },
+  subtitle: { color: colors.textSecondary, fontSize: 15 },
   spacer: { height: spacing.lg },
   fieldError: { color: colors.error, fontSize: 13, marginTop: spacing.sm },
   resend: { alignSelf: 'center', marginTop: spacing.lg },
