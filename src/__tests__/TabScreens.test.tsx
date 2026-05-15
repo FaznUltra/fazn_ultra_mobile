@@ -3,12 +3,13 @@ import { render } from '@testing-library/react-native';
 import { HomeScreen } from '../screens/app/HomeScreen';
 import { ArenaScreen } from '../screens/app/ArenaScreen';
 import { FriendsScreen } from '../screens/app/FriendsScreen';
-import { ProfileScreen } from '../screens/app/ProfileScreen';
 
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children }: React.PropsWithChildren<object>) => <>{children}</>,
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
+
+// ProfileScreen has its own dedicated test suite in ProfileScreen.test.tsx
 
 describe('Tab screens', () => {
   it('HomeScreen renders page name', () => {
@@ -27,11 +28,5 @@ describe('Tab screens', () => {
     const { getByText, getByTestId } = render(<FriendsScreen />);
     expect(getByText('Friends')).toBeTruthy();
     expect(getByTestId('friends-screen')).toBeTruthy();
-  });
-
-  it('ProfileScreen renders page name', () => {
-    const { getByText, getByTestId } = render(<ProfileScreen />);
-    expect(getByText('Profile')).toBeTruthy();
-    expect(getByTestId('profile-screen')).toBeTruthy();
   });
 });
