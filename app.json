@@ -2,6 +2,11 @@
   "expo": {
     "name": "mobile",
     "slug": "mobile",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "scheme": "fazn",
+    "plugins": [
+      "expo-secure-store",
+      "expo-web-browser"
+    ]
   }
 }

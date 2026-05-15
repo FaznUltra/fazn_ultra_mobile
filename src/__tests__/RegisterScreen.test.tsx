@@ -1,0 +1,115 @@
+jest.mock('../lib/api');
+jest.mock('../store/auth.store');
+
+import React from 'react';
+import {
+  render,
+  fireEvent,
+  waitFor,
+  screen,
+} from '@testing-library/react-native';
+import { RegisterScreen } from '../screens/auth/RegisterScreen';
+import { authApi } from '../lib/api';
+
+const navigation = { navigate: jest.fn() } as any;
+const route = { params: undefined } as any;
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
+
+function renderScreen() {
+  return render(<RegisterScreen navigation={navigation} route={route} />);
+}
+
+function fillValidForm() {
+  fireEvent.changeText(screen.getByTestId('register-firstName'), 'Jane');
+  fireEvent.changeText(screen.getByTestId('register-lastName'), 'Doe');
+  fireEvent.changeText(screen.getByTestId('register-email'), 'jane@doe.com');
+  fireEvent.changeText(screen.getByTestId('register-username'), 'janedoe');
+  fireEvent.changeText(screen.getByTestId('register-password'), 'password123');
+  fireEvent.changeText(
+    screen.getByTestId('register-confirmPassword'),
+    'password123',
+  );
+}
+
+describe('RegisterScreen', () => {
+  it('renders all form fields', () => {
+    renderScreen();
+    expect(screen.getByTestId('register-firstName')).toBeTruthy();
+    expect(screen.getByTestId('register-lastName')).toBeTruthy();
+    expect(screen.getByTestId('register-email')).toBeTruthy();
+    expect(screen.getByTestId('register-username')).toBeTruthy();
+    expect(screen.getByTestId('register-password')).toBeTruthy();
+    expect(screen.getByTestId('register-confirmPassword')).toBeTruthy();
+  });
+
+  it('shows required errors on empty submit', async () => {
+    renderScreen();
+    fireEvent.press(screen.getByTestId('register-submit'));
+    await waitFor(() => {
+      expect(screen.getByText('First name is required')).toBeTruthy();
+      expect(screen.getByText('Email is required')).toBeTruthy();
+    });
+    expect(authApi.register).not.toHaveBeenCalled();
+  });
+
+  it('flags a password mismatch', async () => {
+    renderScreen();
+    fillValidForm();
+    fireEvent.changeText(
+      screen.getByTestId('register-confirmPassword'),
+      'different',
+    );
+    fireEvent.press(screen.getByTestId('register-submit'));
+    await waitFor(() =>
+      expect(screen.getByText('Passwords do not match')).toBeTruthy(),
+    );
+    expect(authApi.register).not.toHaveBeenCalled();
+  });
+
+  it('rejects an invalid username', async () => {
+    renderScreen();
+    fillValidForm();
+    fireEvent.changeText(screen.getByTestId('register-username'), 'no');
+    fireEvent.press(screen.getByTestId('register-submit'));
+    await waitFor(() =>
+      expect(
+        screen.getByText(
+          'Username must be 3-32 letters, numbers or underscores',
+        ),
+      ).toBeTruthy(),
+    );
+    expect(authApi.register).not.toHaveBeenCalled();
+  });
+
+  it('registers and navigates to VerifyEmail on success', async () => {
+    (authApi.register as jest.Mock).mockResolvedValue({
+      user: { id: '1', email: 'jane@doe.com' },
+      accessToken: 'acc',
+      refreshToken: 'ref',
+    });
+    (authApi.sendVerification as jest.Mock).mockResolvedValue({
+      message: 'sent',
+    });
+    renderScreen();
+    fillValidForm();
+    fireEvent.press(screen.getByTestId('register-submit'));
+
+    await waitFor(() =>
+      expect(authApi.register).toHaveBeenCalledWith({
+        email: 'jane@doe.com',
+        username: 'janedoe',
+        password: 'password123',
+        firstName: 'Jane',
+        lastName: 'Doe',
+      }),
+    );
+    await waitFor(() =>
+      expect(navigation.navigate).toHaveBeenCalledWith('VerifyEmail', {
+        email: 'jane@doe.com',
+      }),
+    );
+  });
+});
