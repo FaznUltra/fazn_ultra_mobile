@@ -1,22 +1,31 @@
 import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import type { AppStackParamList } from './types';
-import { colors } from '../theme';
-import OverlayTestScreen from '../screens/OverlayTestScreen';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import type { TabParamList } from './types';
+import { TabBar } from '../components/navigation/TabBar';
+import { HomeScreen } from '../screens/app/HomeScreen';
+import { ArenaScreen } from '../screens/app/ArenaScreen';
+import { FriendsScreen } from '../screens/app/FriendsScreen';
+import { ProfileScreen } from '../screens/app/ProfileScreen';
 
-const Stack = createNativeStackNavigator<AppStackParamList>();
+const Tab = createBottomTabNavigator<TabParamList>();
+
+// Placeholder — Create tab never actually renders a screen (handled by TabBar)
+function CreatePlaceholder() {
+  return null;
+}
 
 export function AppNavigator() {
   return (
-    <Stack.Navigator
+    <Tab.Navigator
       id={undefined}
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: colors.background },
-      }}
+      tabBar={(props) => <TabBar {...props} />}
+      screenOptions={{ headerShown: false }}
     >
-      {/* Existing overlay/recording feature — preserved as the app's home. */}
-      <Stack.Screen name="OverlayTest" component={OverlayTestScreen} />
-    </Stack.Navigator>
+      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Arena" component={ArenaScreen} />
+      <Tab.Screen name="Create" component={CreatePlaceholder} />
+      <Tab.Screen name="Friends" component={FriendsScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
+    </Tab.Navigator>
   );
 }

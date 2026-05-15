@@ -1,4 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import type { CompositeScreenProps } from '@react-navigation/native';
 
 export type AuthStackParamList = {
   Welcome: undefined;
@@ -9,12 +11,24 @@ export type AuthStackParamList = {
   ResetPassword: { email: string };
 };
 
-export type AppStackParamList = {
-  OverlayTest: undefined;
+export type TabParamList = {
+  Home: undefined;
+  Arena: undefined;
+  Create: undefined;
+  Friends: undefined;
+  Profile: undefined;
 };
+
+/** Each tab root stack — sub-screens within a tab go here */
+export type HomeStackParamList = { HomeMain: undefined };
+export type ArenaStackParamList = { ArenaMain: undefined };
+export type FriendsStackParamList = { FriendsMain: undefined };
+export type ProfileStackParamList = { ProfileMain: undefined };
 
 export type AuthScreenProps<T extends keyof AuthStackParamList> =
   NativeStackScreenProps<AuthStackParamList, T>;
 
-export type AppScreenProps<T extends keyof AppStackParamList> =
-  NativeStackScreenProps<AppStackParamList, T>;
+export type TabScreenProps<T extends keyof TabParamList> = CompositeScreenProps<
+  BottomTabScreenProps<TabParamList, T>,
+  NativeStackScreenProps<Record<string, undefined>>
+>;
