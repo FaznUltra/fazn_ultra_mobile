@@ -10,9 +10,9 @@ import {
   type ViewToken,
   type FlatList as FlatListType,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const FEATURED_CARD_WIDTH = Dimensions.get('window').width - 48;
-import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from '../../../navigation/types';
 import { HomeHeader, SearchBarTap } from '../../../components/home/HomeHeader';
@@ -115,15 +115,13 @@ export function HomeScreen({ navigation }: Props) {
         notificationCount={data.notificationCount}
         onSearchPress={() => navigation.navigate('GlobalSearch')}
         onNotificationPress={() => navigation.navigate('Notifications')}
-        onWalletPress={() =>
-          Alert.alert('Wallet', 'Wallet screen coming soon.')
-        }
+        onWalletPress={() => navigation.navigate('WalletMain')}
       />
       <SearchBarTap onPress={() => navigation.navigate('GlobalSearch')} />
       <ShortcutsRow
         onPress={(id) => {
           if (id === 'wallet') {
-            Alert.alert('Wallet', 'Wallet screen coming soon.');
+            navigation.navigate('WalletMain');
           } else {
             Alert.alert('Coming soon', `${id} is not available yet.`);
           }

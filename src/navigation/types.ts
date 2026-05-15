@@ -27,6 +27,17 @@ export type HomeStackParamList = {
   UserPublicProfile: { userId: string; username: string };
   ChallengeDetail: { challengeId: string };
   StreamDetail: { streamId: string };
+  WalletMain: undefined;
+  AddFunds: { preselectedAmount?: number };
+  Withdraw: undefined;
+  Transactions: undefined;
+};
+
+export type WalletStackParamList = {
+  WalletMain: undefined;
+  AddFunds: { preselectedAmount?: number };
+  Withdraw: undefined;
+  Transactions: undefined;
 };
 export type ArenaStackParamList = { ArenaMain: undefined };
 export type FriendsStackParamList = {

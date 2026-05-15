@@ -1,0 +1,384 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  Animated,
+  StyleSheet,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { HomeStackParamList } from '../../../navigation/types';
+import { colors, spacing, radius } from '../../../theme';
+import { Button } from '../../../components/ui/Button';
+import { TopUpCard } from '../../../components/wallet/TopUpCard';
+import {
+  ChevronLeftIcon,
+  CheckIcon,
+  WalletGlyph,
+} from '../../../components/wallet/WalletIcons';
+import { useWallet } from '../../../hooks/useWallet';
+import {
+  formatFt,
+  formatReal,
+  ftToBuyReal,
+  topUpPresets,
+} from '../../../utils/wallet';
+import type { Currency, PaymentMethod } from '../../../types/wallet';
+
+type Props = NativeStackScreenProps<HomeStackParamList, 'AddFunds'>;
+type Step = 'amount' | 'method' | 'processing';
+
+const NG_METHODS: { id: PaymentMethod; name: string; sub: string }[] = [
+  { id: 'paystack_card', name: 'Paystack Card', sub: 'Instant · Cards accepted' },
+  { id: 'paystack_bank', name: 'Bank Transfer (Paystack)', sub: 'Instant · Pay from any bank' },
+  { id: 'paystack_ussd', name: 'USSD', sub: 'Dial a code to pay' },
+  { id: 'bank_transfer', name: 'Direct Bank Transfer', sub: '10–30 min · Manual' },
+];
+const INTL_METHODS: { id: PaymentMethod; name: string; sub: string }[] = [
+  { id: 'stripe_card', name: 'Card (Stripe)', sub: 'Instant · Visa, Mastercard, Amex' },
+  { id: 'bank_transfer', name: 'Bank Transfer', sub: '1–2 days · Manual' },
+];
+
+export function AddFundsScreen({ navigation, route }: Props) {
+  const { state, topUp } = useWallet();
+  const currency: Currency =
+    state.status === 'success' ? state.data.currency : 'NGN';
+  const country = state.status === 'success' ? state.data.country : 'NG';
+
+  const presets = topUpPresets(currency);
+  const [step, setStep] = useState<Step>('amount');
+  const [amount, setAmount] = useState<number | null>(
+    route.params?.preselectedAmount ?? null,
+  );
+  const [custom, setCustom] = useState('');
+  const [method, setMethod] = useState<PaymentMethod | null>(null);
+  const [done, setDone] = useState(false);
+  const checkScale = useRef(new Animated.Value(0)).current;
+
+  const methods = country === 'NG' ? NG_METHODS : INTL_METHODS;
+
+  const effectiveAmount =
+    custom.trim().length > 0 ? Number(custom) || 0 : amount ?? 0;
+
+  useEffect(() => {
+    if (step !== 'processing') return;
+    setDone(false);
+    const t = setTimeout(() => {
+      setDone(true);
+      Animated.spring(checkScale, {
+        toValue: 1,
+        useNativeDriver: true,
+        friction: 5,
+      }).start();
+      if (method) void topUp(effectiveAmount, method);
+    }, 2000);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  const onSelectPreset = (ft: number) => {
+    setAmount(ft);
+    setCustom('');
+  };
+
+  // ---------- Step 3: processing / success ----------
+  if (step === 'processing') {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+        {!done ? (
+          <View style={styles.center} testID="payment-processing">
+            <ActivityIndicator size="large" color={colors.primaryLight} />
+            <Text style={styles.processingTitle}>
+              Processing your payment…
+            </Text>
+            <Text style={styles.muted}>Do not close this screen</Text>
+          </View>
+        ) : (
+          <View style={styles.center} testID="payment-success">
+            <Animated.View
+              style={[styles.checkCircle, { transform: [{ scale: checkScale }] }]}
+            >
+              <CheckIcon size={48} color="#fff" />
+            </Animated.View>
+            <Text style={styles.successTitle}>Payment Successful!</Text>
+            <Text style={styles.muted}>
+              +{formatFt(effectiveAmount)} added to your wallet
+            </Text>
+            <View style={styles.doneBtnWrap}>
+              <Button
+                title="Done"
+                onPress={() => navigation.goBack()}
+                testID="payment-done-btn"
+              />
+            </View>
+          </View>
+        )}
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView
+      style={styles.safe}
+      edges={['top', 'left', 'right']}
+      testID="add-funds-screen"
+    >
+      <View style={styles.topBar}>
+        <TouchableOpacity
+          onPress={() =>
+            step === 'method' ? setStep('amount') : navigation.goBack()
+          }
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          testID="add-funds-back-btn"
+        >
+          <ChevronLeftIcon size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
+        <Text style={styles.title}>
+          {step === 'amount' ? 'Add FazTokens' : 'Payment Method'}
+        </Text>
+        <View style={styles.backSpacer} />
+      </View>
+
+      {step === 'amount' && (
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.rateBar}>
+            <Text style={styles.rateText}>
+              1 FT = {formatReal(ftToBuyReal(1, currency), currency)} · Rate
+              locked for 15 min
+            </Text>
+          </View>
+
+          <View style={styles.grid}>
+            {presets.map((opt) => (
+              <TopUpCard
+                key={opt.ftAmount}
+                option={opt}
+                selected={!custom && amount === opt.ftAmount}
+                onPress={() => onSelectPreset(opt.ftAmount)}
+                style={styles.gridCard}
+              />
+            ))}
+          </View>
+
+          <Text style={styles.label}>Enter custom amount (FT)</Text>
+          <TextInput
+            style={styles.input}
+            value={custom}
+            onChangeText={(t) => {
+              setCustom(t.replace(/[^0-9]/g, ''));
+              setAmount(null);
+            }}
+            placeholder="e.g. 3000"
+            placeholderTextColor={colors.textMuted}
+            keyboardType="numeric"
+            testID="custom-amount-input"
+          />
+          {effectiveAmount > 0 && (
+            <Text style={styles.equiv} testID="custom-amount-equiv">
+              You pay{' '}
+              {formatReal(ftToBuyReal(effectiveAmount, currency), currency)}
+            </Text>
+          )}
+
+          <View style={styles.cta}>
+            <Button
+              title="Continue"
+              onPress={() => setStep('method')}
+              disabled={effectiveAmount <= 0}
+              testID="add-funds-continue-btn"
+            />
+          </View>
+        </ScrollView>
+      )}
+
+      {step === 'method' && (
+        <ScrollView contentContainerStyle={styles.content}>
+          <Text style={styles.payHeader}>
+            Pay {formatFt(effectiveAmount)} (
+            {formatReal(ftToBuyReal(effectiveAmount, currency), currency)})
+          </Text>
+
+          <View style={styles.methodList} testID="payment-method-list">
+            {methods.map((m) => {
+              const active = method === m.id;
+              return (
+                <TouchableOpacity
+                  key={m.id}
+                  style={[styles.methodRow, active && styles.methodRowActive]}
+                  onPress={() => setMethod(m.id)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  testID={`payment-method-${m.id}`}
+                >
+                  <View style={styles.methodLogo}>
+                    <WalletGlyph size={20} color={colors.primaryLight} />
+                  </View>
+                  <View style={styles.methodInfo}>
+                    <Text style={styles.methodName}>{m.name}</Text>
+                    <Text style={styles.methodSub}>{m.sub}</Text>
+                  </View>
+                  <View
+                    style={[styles.radio, active && styles.radioActive]}
+                  >
+                    {active && <View style={styles.radioDot} />}
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <View style={styles.cta}>
+            <Button
+              title="Pay Now"
+              onPress={() => setStep('processing')}
+              disabled={!method}
+              testID="pay-now-btn"
+            />
+          </View>
+        </ScrollView>
+      )}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: spacing.md,
+  },
+  backSpacer: { width: 24 },
+  title: { color: colors.textPrimary, fontSize: 18, fontWeight: '700' },
+  content: { paddingHorizontal: 20, paddingBottom: spacing.xl },
+  rateBar: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  rateText: { color: colors.textMuted, fontSize: 12 },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  gridCard: { width: '48%' },
+  label: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+  },
+  input: {
+    backgroundColor: colors.inputBg,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    color: colors.textPrimary,
+    fontSize: 16,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  equiv: {
+    color: colors.primaryLight,
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: spacing.sm,
+  },
+  cta: { marginTop: spacing.xl },
+  payHeader: {
+    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: spacing.lg,
+  },
+  methodList: { gap: spacing.sm },
+  methodRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+  },
+  methodRowActive: { borderColor: colors.primary },
+  methodLogo: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.sm,
+    backgroundColor: colors.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
+  methodInfo: { flex: 1 },
+  methodName: {
+    color: colors.textPrimary,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  methodSub: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioActive: { borderColor: colors.primary },
+  radioDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 40,
+  },
+  processingTitle: {
+    color: colors.textPrimary,
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: spacing.lg,
+  },
+  muted: {
+    color: colors.textMuted,
+    fontSize: 13,
+    marginTop: spacing.sm,
+    textAlign: 'center',
+  },
+  checkCircle: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: colors.success,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
+  successTitle: {
+    color: colors.textPrimary,
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  doneBtnWrap: { marginTop: spacing.xl, alignSelf: 'stretch' },
+});

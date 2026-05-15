@@ -9,6 +9,10 @@ import { GlobalSearchScreen } from '../screens/app/home/GlobalSearchScreen';
 import { NotificationsScreen } from '../screens/app/home/NotificationsScreen';
 import { UserPublicProfileScreen } from '../screens/app/home/UserPublicProfileScreen';
 import { ScreenContainer } from '../components/ui/ScreenContainer';
+import { WalletScreen } from '../screens/app/wallet/WalletScreen';
+import { AddFundsScreen } from '../screens/app/wallet/AddFundsScreen';
+import { WithdrawScreen } from '../screens/app/wallet/WithdrawScreen';
+import { TransactionsScreen } from '../screens/app/wallet/TransactionsScreen';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 
@@ -92,6 +96,18 @@ export function HomeNavigator() {
       />
       <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
       <Stack.Screen name="StreamDetail" component={StreamDetailScreen} />
+      <Stack.Screen name="WalletMain" component={WalletScreen} />
+      <Stack.Screen
+        name="AddFunds"
+        component={AddFundsScreen}
+        options={{ presentation: 'modal' }}
+      />
+      <Stack.Screen
+        name="Withdraw"
+        component={WithdrawScreen}
+        options={{ presentation: 'modal' }}
+      />
+      <Stack.Screen name="Transactions" component={TransactionsScreen} />
     </Stack.Navigator>
   );
 }
