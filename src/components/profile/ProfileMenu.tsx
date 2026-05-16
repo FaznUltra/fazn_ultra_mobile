@@ -28,6 +28,26 @@ function PrivacyIcon() {
   );
 }
 
+function StreamingIcon() {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M5 9C7.5 6.5 11 5 12 5C13 5 16.5 6.5 19 9"
+        stroke={colors.primaryLight}
+        strokeWidth={2}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M8 13C9.5 11.5 11 11 12 11C13 11 14.5 11.5 16 13"
+        stroke={colors.primaryLight}
+        strokeWidth={2}
+        strokeLinecap="round"
+      />
+      <Circle cx={12} cy={18} r={2} fill={colors.primaryLight} />
+    </Svg>
+  );
+}
+
 function SettingsIcon() {
   return (
     <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
@@ -117,6 +137,7 @@ interface Props {
   onWalletPress: () => void;
   onEditPress?: () => void;
   onPrivacyPress: () => void;
+  onStreamingPress: () => void;
   onSettingsPress: () => void;
   testID?: string;
 }
@@ -128,6 +149,7 @@ export function ProfileMenu({
   onLogout,
   onWalletPress,
   onPrivacyPress,
+  onStreamingPress,
   onSettingsPress,
   testID,
 }: Props) {
@@ -159,6 +181,13 @@ export function ProfileMenu({
           label="Privacy"
           onPress={onPrivacyPress}
           testID="menu-privacy"
+        />
+        <View style={styles.sep} />
+        <MenuItem
+          icon={<StreamingIcon />}
+          label="Streaming Channels"
+          onPress={onStreamingPress}
+          testID="menu-streaming"
         />
         <View style={styles.sep} />
         <MenuItem

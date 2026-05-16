@@ -92,6 +92,7 @@ export function ProfileScreen() {
         onLogout={logout}
         onWalletPress={goToWallet}
         onPrivacyPress={() => navigation.navigate('Privacy')}
+        onStreamingPress={() => navigation.navigate('StreamingChannels')}
         onSettingsPress={() => navigation.navigate('Settings')}
         testID="profile-menu"
       />

@@ -84,6 +84,7 @@ export type ProfileStackParamList = {
   ProfileMain: undefined;
   EditProfile: undefined;
   Privacy: undefined;
+  StreamingChannels: undefined;
   Settings: undefined;
 };
 
