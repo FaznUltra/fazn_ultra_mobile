@@ -56,7 +56,7 @@ export function PaystackSheet({ visible, authorizationUrl, reference, amount, on
       // redirects to our callback the browser auto-closes.
       const result = await WebBrowser.openAuthSessionAsync(
         authorizationUrl,
-        'fazn://',
+        'fazn://paystack',
         { showInRecents: false },
       );
 
