@@ -39,7 +39,10 @@ export type WalletStackParamList = {
   Withdraw: undefined;
   Transactions: undefined;
 };
-export type ArenaStackParamList = { ArenaMain: undefined };
+export type ArenaStackParamList = {
+  ArenaMain: undefined;
+  ChallengeDetail: { challengeId: string };
+};
 export type FriendsStackParamList = {
   FriendsList: undefined;
   FriendSearch: undefined;

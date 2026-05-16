@@ -3,7 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { TabParamList } from './types';
 import { TabBar } from '../components/navigation/TabBar';
 import { HomeNavigator } from './HomeNavigator';
-import { ArenaScreen } from '../screens/app/ArenaScreen';
+import { ArenaNavigator } from './ArenaNavigator';
 import { FriendsNavigator } from './FriendsNavigator';
 import { ProfileNavigator } from './ProfileNavigator';
 
@@ -22,7 +22,7 @@ export function AppNavigator() {
       screenOptions={{ headerShown: false }}
     >
       <Tab.Screen name="Home" component={HomeNavigator} />
-      <Tab.Screen name="Arena" component={ArenaScreen} />
+      <Tab.Screen name="Arena" component={ArenaNavigator} />
       <Tab.Screen name="Create" component={CreatePlaceholder} />
       <Tab.Screen name="Friends" component={FriendsNavigator} />
       <Tab.Screen name="Profile" component={ProfileNavigator} />
