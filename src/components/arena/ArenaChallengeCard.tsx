@@ -14,7 +14,6 @@ interface Props {
   onAccept?: () => void;
   onReject?: () => void;
   onCancel?: () => void;
-  onSubmitResult?: () => void;
   testID?: string;
 }
 
@@ -104,7 +103,6 @@ export function ArenaChallengeCard({
   onAccept,
   onReject,
   onCancel,
-  onSubmitResult,
   testID,
 }: Props) {
   const sv = statusVisual(challenge.status, challenge.outcome);
@@ -137,9 +135,6 @@ export function ArenaChallengeCard({
       {/* Top row */}
       <View style={styles.topRow}>
         <View style={styles.gameWrap}>
-          <View
-            style={[styles.swatch, { backgroundColor: challenge.gameBg }]}
-          />
           <Text style={styles.gameName} numberOfLines={1}>
             {challenge.game}
           </Text>
@@ -274,16 +269,10 @@ export function ArenaChallengeCard({
           </View>
         )}
 
-        {challenge.status === 'awaiting_result' && variant === 'my-bet' && (
-          <TouchableOpacity
-            style={[styles.btn, styles.btnWarning]}
-            onPress={onSubmitResult}
-            accessibilityRole="button"
-            accessibilityLabel="Submit result"
-            testID={`card-submit-result-${challenge.id}`}
-          >
-            <Text style={styles.btnWarningText}>Submit Result →</Text>
-          </TouchableOpacity>
+        {challenge.status === 'awaiting_result' && (
+          <View style={styles.reviewChip} testID={`card-under-review-${challenge.id}`}>
+            <Text style={styles.reviewChipText}>⏳ AI scoring in progress…</Text>
+          </View>
         )}
 
         {challenge.status === 'disputed' && (
@@ -364,7 +353,6 @@ const styles = StyleSheet.create({
     gap: spacing.xs + 2,
     flex: 1,
   },
-  swatch: { width: 20, height: 20, borderRadius: 10 },
   gameName: {
     color: colors.textPrimary,
     fontSize: 14,
@@ -512,12 +500,13 @@ const styles = StyleSheet.create({
   },
   btnWarningText: { color: AMBER, fontSize: 14, fontWeight: '700' },
   reviewChip: {
-    backgroundColor: colors.error + '22',
+    backgroundColor: AMBER + '22',
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
     borderRadius: radius.sm,
+    alignSelf: 'flex-start',
   },
-  reviewText: { color: colors.error, fontSize: 12, fontWeight: '700' },
+  reviewChipText: { color: AMBER, fontSize: 12, fontWeight: '600' },
   outcomeBadge: {
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
