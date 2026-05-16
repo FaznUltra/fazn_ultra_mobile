@@ -27,7 +27,7 @@ export function currencySymbol(currency: Currency): string {
 }
 
 export function formatFt(amount: number): string {
-  return `${Math.round(amount).toLocaleString('en-US')} FT`;
+  return `${Math.round(amount).toLocaleString('en-US')} Tokens`;
 }
 
 /** FT -> real money the user pays to buy that FT. */

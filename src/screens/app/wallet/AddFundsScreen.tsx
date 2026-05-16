@@ -139,7 +139,7 @@ export function AddFundsScreen({ navigation, route }: Props) {
           <ChevronLeftIcon size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.title}>
-          {step === 'amount' ? 'Add FazTokens' : 'Payment Method'}
+          {step === 'amount' ? 'Add Tokens' : 'Payment Method'}
         </Text>
         <View style={styles.backSpacer} />
       </View>
@@ -151,7 +151,7 @@ export function AddFundsScreen({ navigation, route }: Props) {
         >
           <View style={styles.rateBar}>
             <Text style={styles.rateText}>
-              1 FT = {formatReal(ftToBuyReal(1, currency), currency)} · Rate
+              1 Token = {formatReal(ftToBuyReal(1, currency), currency)} · Rate
               locked for 15 min
             </Text>
           </View>
@@ -168,7 +168,7 @@ export function AddFundsScreen({ navigation, route }: Props) {
             ))}
           </View>
 
-          <Text style={styles.label}>Enter custom amount (FT)</Text>
+          <Text style={styles.label}>Enter custom amount (Tokens)</Text>
           <TextInput
             style={styles.input}
             value={custom}

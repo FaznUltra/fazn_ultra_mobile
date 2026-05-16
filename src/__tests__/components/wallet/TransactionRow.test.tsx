@@ -36,7 +36,7 @@ describe('TransactionRow', () => {
       <TransactionRow transaction={base} />,
     );
     expect(getByTestId('transaction-row-tx1')).toBeTruthy();
-    expect(getByText('+2,500 FT')).toBeTruthy();
+    expect(getByText('+2,500 Tokens')).toBeTruthy();
   });
 
   it('renders outgoing with red amount (−)', () => {
@@ -45,7 +45,7 @@ describe('TransactionRow', () => {
         transaction={{ ...base, id: 'tx2', type: 'withdrawal' }}
       />,
     );
-    expect(getByText('−2,500 FT')).toBeTruthy();
+    expect(getByText('−2,500 Tokens')).toBeTruthy();
   });
 
   it('renders pending status badge', () => {

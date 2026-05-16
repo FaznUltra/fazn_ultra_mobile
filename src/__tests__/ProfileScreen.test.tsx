@@ -38,6 +38,11 @@ const mockUser = {
 
 const mockLogout = jest.fn();
 
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({ dispatch: jest.fn() }),
+  CommonActions: { navigate: jest.fn() },
+}));
+
 jest.mock('../store/auth.store', () => ({
   useAuthStore: (selector: (s: object) => unknown) =>
     selector({ user: mockUser, logout: mockLogout }),

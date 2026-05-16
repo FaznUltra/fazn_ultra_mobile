@@ -108,7 +108,7 @@ export function WithdrawScreen({ navigation }: Props) {
         >
           <ChevronLeftIcon size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.title}>Withdraw FazTokens</Text>
+        <Text style={styles.title}>Withdraw Tokens</Text>
         <View style={styles.spacer} />
       </View>
 
@@ -128,7 +128,7 @@ export function WithdrawScreen({ navigation }: Props) {
               style={styles.input}
               value={amountStr}
               onChangeText={(t) => setAmountStr(t.replace(/[^0-9]/g, ''))}
-              placeholder="Amount in FT"
+              placeholder="Amount in Tokens"
               placeholderTextColor={colors.textMuted}
               keyboardType="numeric"
               testID="withdraw-amount-input"

@@ -68,7 +68,7 @@ describe('WithdrawScreen', () => {
   it('renders with available balance', () => {
     const { getByTestId, getByText } = renderScreen();
     expect(getByTestId('withdraw-screen')).toBeTruthy();
-    expect(getByText('Available: 12,450 FT')).toBeTruthy();
+    expect(getByText('Available: 12,450 Tokens')).toBeTruthy();
   });
 
   it('quick pick 50% fills correct amount', () => {
@@ -77,7 +77,7 @@ describe('WithdrawScreen', () => {
     expect(getByTestId('withdraw-amount-input').props.value).toBe('6225');
   });
 
-  it('continue disabled below min 1000 FT', () => {
+  it('continue disabled below min 1000 Tokens', () => {
     const { getByTestId } = renderScreen();
     fireEvent.changeText(getByTestId('withdraw-amount-input'), '500');
     expect(

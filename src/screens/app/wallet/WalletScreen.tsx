@@ -132,10 +132,10 @@ export function WalletScreen({ navigation }: Props) {
               style={[styles.actionBtn, styles.actionFilled]}
               onPress={() => navigation.navigate('AddFunds', {})}
               accessibilityRole="button"
-              accessibilityLabel="Add FazTokens"
+              accessibilityLabel="Add Tokens"
               testID="wallet-add-btn"
             >
-              <Text style={styles.actionFilledText}>+ Add FT</Text>
+              <Text style={styles.actionFilledText}>+ Add Tokens</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionBtn, styles.actionOutline]}

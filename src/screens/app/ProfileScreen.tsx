@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { ScreenContainer } from '../../components/ui/ScreenContainer';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { ProfileHeader } from '../../components/profile/ProfileHeader';
@@ -17,6 +18,12 @@ export function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const { state, retry } = useProfile();
+  const navigation = useNavigation();
+
+  const goToWallet = () =>
+    navigation.dispatch(
+      CommonActions.navigate({ name: 'Home', params: { screen: 'WalletMain' } }),
+    );
 
   if (!user) return null;
 
@@ -74,7 +81,7 @@ export function ProfileScreen() {
       <SectionHeader title="Last 5 Results" />
       <RecentResults results={data.recentResults} testID="profile-results" />
 
-      <ProfileMenu onLogout={logout} testID="profile-menu" />
+      <ProfileMenu onLogout={logout} onWalletPress={goToWallet} testID="profile-menu" />
     </ScreenContainer>
   );
 }

@@ -114,13 +114,14 @@ function MenuItem({ icon, label, onPress, danger = false, testID }: MenuItemProp
 
 interface Props {
   onLogout: () => void;
+  onWalletPress: () => void;
   testID?: string;
 }
 
 const soon = (label: string) =>
   Alert.alert(label, 'This feature is coming soon.');
 
-export function ProfileMenu({ onLogout, testID }: Props) {
+export function ProfileMenu({ onLogout, onWalletPress, testID }: Props) {
   return (
     <View testID={testID}>
       {/* Account section */}
@@ -129,7 +130,7 @@ export function ProfileMenu({ onLogout, testID }: Props) {
         <MenuItem
           icon={<WalletIcon />}
           label="Wallet"
-          onPress={() => soon('Wallet')}
+          onPress={onWalletPress}
           testID="menu-wallet"
         />
         <View style={styles.sep} />

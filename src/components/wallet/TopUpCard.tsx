@@ -34,7 +34,7 @@ export function TopUpCard({ option, selected = false, onPress, style }: Props) {
       </Text>
 
       {option.bonus ? (
-        <Text style={styles.bonus}>+{option.bonus} FT FREE</Text>
+        <Text style={styles.bonus}>+{option.bonus} FREE</Text>
       ) : null}
     </TouchableOpacity>
   );
