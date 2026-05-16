@@ -60,16 +60,9 @@ export function PaystackSheet({ visible, authorizationUrl, reference, amount, on
         { showInRecents: false },
       );
 
-      // result.type is 'success' (deep-link redirect caught) or 'cancel' (dismissed)
-      // Either way, verify with the backend — the source of truth is Paystack, not
-      // whether the redirect was intercepted.
-      if (result.type === 'cancel') {
-        // User closed the browser manually — close the sheet without verifying
-        didStart.current = false;
-        onClose();
-        return;
-      }
-
+      // Always verify regardless of result.type — payment may have completed
+      // before the user manually closed the browser. Paystack is the source
+      // of truth, not whether the deep-link redirect was intercepted.
       setSheetState('verifying');
 
       try {
@@ -84,10 +77,13 @@ export function PaystackSheet({ visible, authorizationUrl, reference, amount, on
           onSuccess();
         }, 1800);
       } catch (err) {
+        // If verification fails, the transaction may still have gone through.
+        // Refresh wallet anyway so balance reflects any server-side credit.
+        onSuccess();
         const msg =
           err instanceof ApiError
             ? err.message
-            : 'Payment verification failed. Contact support if charged.';
+            : 'Could not verify payment. Your balance will update shortly.';
         setErrorMessage(msg);
         setSheetState('failed');
       }
