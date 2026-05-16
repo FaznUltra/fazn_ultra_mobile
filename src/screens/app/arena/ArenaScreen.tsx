@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, spacing, radius } from '../../../theme';
 import { useArena } from '../../../hooks/useArena';
@@ -114,6 +114,14 @@ export function ArenaScreen() {
   const openDetail = (challengeId: string) =>
     navigation.navigate('ChallengeDetail', { challengeId });
 
+  const startCreateChallenge = () =>
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'Home',
+        params: { screen: 'SelectPlatform' },
+      }),
+    );
+
   const onSubmitResultPrompt = (c: ArenaChallenge) => {
     Alert.alert('Submit Result', `What was the outcome of ${c.game}?`, [
       { text: 'I Won', onPress: () => submitResult(c.id, 'win') },
@@ -141,9 +149,7 @@ export function ArenaScreen() {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.createBtn}
-          onPress={() =>
-            Alert.alert('Create Challenge', 'Challenge creation coming soon.')
-          }
+          onPress={startCreateChallenge}
           accessibilityRole="button"
           accessibilityLabel="Create challenge"
           testID="arena-create-btn"
@@ -244,9 +250,7 @@ export function ArenaScreen() {
       {showCreate && (
         <TouchableOpacity
           style={styles.createBtn}
-          onPress={() =>
-            Alert.alert('Create Challenge', 'Challenge creation coming soon.')
-          }
+          onPress={startCreateChallenge}
           accessibilityRole="button"
           accessibilityLabel="Create challenge"
           testID="arena-empty-create-btn"

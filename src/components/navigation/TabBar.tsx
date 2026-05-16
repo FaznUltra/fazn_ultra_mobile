@@ -7,6 +7,7 @@ import {
   Platform,
 } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { CommonActions } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing } from '../../theme';
 import {
@@ -101,8 +102,14 @@ export function TabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         visible={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         onSelect={(id) => {
-          // TODO: navigate to specific create flow
-          console.log('Create selected:', id);
+          if (id === 'challenge') {
+            navigation.dispatch(
+              CommonActions.navigate({
+                name: 'Home',
+                params: { screen: 'SelectPlatform' },
+              }),
+            );
+          }
         }}
       />
     </>

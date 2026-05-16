@@ -13,6 +13,12 @@ import { WalletScreen } from '../screens/app/wallet/WalletScreen';
 import { AddFundsScreen } from '../screens/app/wallet/AddFundsScreen';
 import { WithdrawScreen } from '../screens/app/wallet/WithdrawScreen';
 import { TransactionsScreen } from '../screens/app/wallet/TransactionsScreen';
+import { SelectPlatformScreen } from '../screens/app/create/SelectPlatformScreen';
+import { SelectGameScreen } from '../screens/app/create/SelectGameScreen';
+import { EFootballSetupScreen } from '../screens/app/create/EFootballSetupScreen';
+import { DreamLeagueSetupScreen } from '../screens/app/create/DreamLeagueSetupScreen';
+import { ChallengeConfirmScreen } from '../screens/app/create/ChallengeConfirmScreen';
+import { ChallengeSuccessScreen } from '../screens/app/create/ChallengeSuccessScreen';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
 
@@ -108,6 +114,29 @@ export function HomeNavigator() {
         options={{ presentation: 'modal' }}
       />
       <Stack.Screen name="Transactions" component={TransactionsScreen} />
+      <Stack.Screen
+        name="SelectPlatform"
+        component={SelectPlatformScreen}
+        options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+      />
+      <Stack.Screen name="SelectGame" component={SelectGameScreen} />
+      <Stack.Screen
+        name="EFootballSetup"
+        component={EFootballSetupScreen}
+      />
+      <Stack.Screen
+        name="DreamLeagueSetup"
+        component={DreamLeagueSetupScreen}
+      />
+      <Stack.Screen
+        name="ChallengeConfirm"
+        component={ChallengeConfirmScreen}
+      />
+      <Stack.Screen
+        name="ChallengeSuccess"
+        component={ChallengeSuccessScreen}
+        options={{ presentation: 'fullScreenModal' }}
+      />
     </Stack.Navigator>
   );
 }

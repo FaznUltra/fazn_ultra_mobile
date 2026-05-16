@@ -1,6 +1,7 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { CompositeScreenProps } from '@react-navigation/native';
+import type { ChallengeSetupData } from '../types/challenge';
 
 export type AuthStackParamList = {
   Welcome: undefined;
@@ -31,6 +32,37 @@ export type HomeStackParamList = {
   AddFunds: { preselectedAmount?: number };
   Withdraw: undefined;
   Transactions: undefined;
+  SelectPlatform: undefined;
+  SelectGame: { platformId: string; platformLabel: string };
+  EFootballSetup: {
+    platformId: string;
+    platformLabel: string;
+    gameId: string;
+    gameLabel: string;
+  };
+  DreamLeagueSetup: {
+    platformId: string;
+    platformLabel: string;
+    gameId: string;
+    gameLabel: string;
+  };
+  ChallengeConfirm: {
+    platformId: string;
+    platformLabel: string;
+    gameId: string;
+    gameLabel: string;
+    setup: ChallengeSetupData;
+  };
+  ChallengeSuccess: {
+    challengeId: string;
+    gameLabel: string;
+    opponentName?: string;
+  };
+};
+
+export type CreateChallengeStackParamList = {
+  SelectPlatform: undefined;
+  SelectGame: { platformId: string; platformLabel: string };
 };
 
 export type WalletStackParamList = {
