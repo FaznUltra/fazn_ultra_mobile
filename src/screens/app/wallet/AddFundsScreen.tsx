@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -27,15 +27,11 @@ import { formatNaira, TOP_UP_PRESETS } from '../../../utils/wallet';
 import type { PaymentMethod } from '../../../types/wallet';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'AddFunds'>;
-type Step = 'amount' | 'method' | 'processing';
+type Step = 'amount' | 'method';
 
 const METHODS: { id: PaymentMethod; name: string; sub: string }[] = [
   { id: 'paystack_card', name: 'Paystack Card', sub: 'Instant · Debit/Credit cards' },
-  {
-    id: 'paystack_bank',
-    name: 'Paystack Bank Transfer',
-    sub: 'Transfer from your bank',
-  },
+  { id: 'paystack_bank', name: 'Paystack Bank Transfer', sub: 'Transfer from your bank' },
   { id: 'paystack_ussd', name: 'USSD', sub: 'Dial a code · No internet needed' },
   { id: 'bank_transfer', name: 'Direct Bank Transfer', sub: 'Manual · 1-3 hours' },
 ];
@@ -43,70 +39,57 @@ const METHODS: { id: PaymentMethod; name: string; sub: string }[] = [
 export function AddFundsScreen({ navigation, route }: Props) {
   const { topUp, refreshWallet } = useWallet();
 
-  const presets = TOP_UP_PRESETS;
   const [step, setStep] = useState<Step>('amount');
   const [amount, setAmount] = useState<number | null>(
     route.params?.preselectedAmount ?? null,
   );
   const [custom, setCustom] = useState('');
   const [method, setMethod] = useState<PaymentMethod | null>(null);
-  const [done, setDone] = useState(false);
+  const [paying, setPaying] = useState(false);
+
+  // Paystack sheet state
   const [paystackUrl, setPaystackUrl] = useState<string | null>(null);
   const [paystackRef, setPaystackRef] = useState('');
-  const checkScale = useRef(new Animated.Value(0)).current;
 
-  const methods = METHODS;
+  // Mock-mode success state
+  const [mockSuccess, setMockSuccess] = useState(false);
+  const checkScale = useRef(new Animated.Value(0)).current;
 
   const effectiveAmount =
     custom.trim().length > 0 ? Number(custom) || 0 : amount ?? 0;
-
-  useEffect(() => {
-    if (step !== 'processing') return;
-    if (!method) return;
-
-    let cancelled = false;
-    setDone(false);
-
-    (async () => {
-      try {
-        const resp = await topUp(effectiveAmount, method);
-        if (cancelled) return;
-
-        if (resp.authorizationUrl) {
-          // Open Paystack inside the in-app sheet (no browser handoff)
-          setPaystackRef(resp.reference);
-          setPaystackUrl(resp.authorizationUrl);
-        } else {
-          // Mock mode (Paystack key not configured) — show success immediately
-          setDone(true);
-          Animated.spring(checkScale, {
-            toValue: 1,
-            useNativeDriver: true,
-            friction: 5,
-          }).start();
-        }
-      } catch (err) {
-        if (cancelled) return;
-        const message =
-          err instanceof Error ? err.message : 'Payment could not be started.';
-        Alert.alert('Payment failed', message, [
-          { text: 'OK', onPress: () => setStep('method') },
-        ]);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
 
   const onSelectPreset = (value: number) => {
     setAmount(value);
     setCustom('');
   };
 
-  // ---------- Paystack in-app sheet ----------
+  const onPayNow = async () => {
+    if (!method || effectiveAmount <= 0) return;
+    setPaying(true);
+    try {
+      const resp = await topUp(effectiveAmount, method);
+      if (resp.authorizationUrl) {
+        setPaystackRef(resp.reference);
+        setPaystackUrl(resp.authorizationUrl);
+      } else {
+        // Mock mode — no Paystack key configured yet
+        setMockSuccess(true);
+        Animated.spring(checkScale, {
+          toValue: 1,
+          useNativeDriver: true,
+          friction: 5,
+        }).start();
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Payment could not be started.';
+      Alert.alert('Payment failed', message);
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  // Paystack in-app sheet
   if (paystackUrl) {
     return (
       <PaystackSheet
@@ -121,44 +104,35 @@ export function AddFundsScreen({ navigation, route }: Props) {
         }}
         onClose={() => {
           setPaystackUrl(null);
+          setMethod(null);
           setStep('method');
         }}
       />
     );
   }
 
-  // ---------- Step 3: processing / success ----------
-  if (step === 'processing') {
+  // Mock-mode success screen
+  if (mockSuccess) {
     return (
       <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
-        {!done ? (
-          <View style={styles.center} testID="payment-processing">
-            <ActivityIndicator size="large" color={colors.primaryLight} />
-            <Text style={styles.processingTitle}>
-              Processing your payment…
-            </Text>
-            <Text style={styles.muted}>Do not close this screen</Text>
+        <View style={styles.center} testID="payment-success">
+          <Animated.View
+            style={[styles.checkCircle, { transform: [{ scale: checkScale }] }]}
+          >
+            <CheckIcon size={48} color="#fff" />
+          </Animated.View>
+          <Text style={styles.successTitle}>Top-up Queued</Text>
+          <Text style={styles.muted}>
+            {formatNaira(effectiveAmount)} will be credited once payment is confirmed
+          </Text>
+          <View style={styles.doneBtnWrap}>
+            <Button
+              title="Done"
+              onPress={() => navigation.goBack()}
+              testID="payment-done-btn"
+            />
           </View>
-        ) : (
-          <View style={styles.center} testID="payment-success">
-            <Animated.View
-              style={[styles.checkCircle, { transform: [{ scale: checkScale }] }]}
-            >
-              <CheckIcon size={48} color="#fff" />
-            </Animated.View>
-            <Text style={styles.successTitle}>Top-up Queued</Text>
-            <Text style={styles.muted}>
-              {formatNaira(effectiveAmount)} will be credited once payment is confirmed
-            </Text>
-            <View style={styles.doneBtnWrap}>
-              <Button
-                title="Done"
-                onPress={() => navigation.goBack()}
-                testID="payment-done-btn"
-              />
-            </View>
-          </View>
-        )}
+        </View>
       </SafeAreaView>
     );
   }
@@ -192,7 +166,7 @@ export function AddFundsScreen({ navigation, route }: Props) {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.grid}>
-            {presets.map((opt) => (
+            {TOP_UP_PRESETS.map((opt) => (
               <TopUpCard
                 key={opt.amount}
                 option={opt}
@@ -243,7 +217,7 @@ export function AddFundsScreen({ navigation, route }: Props) {
           </Text>
 
           <View style={styles.methodList} testID="payment-method-list">
-            {methods.map((m) => {
+            {METHODS.map((m) => {
               const active = method === m.id;
               return (
                 <TouchableOpacity
@@ -261,9 +235,7 @@ export function AddFundsScreen({ navigation, route }: Props) {
                     <Text style={styles.methodName}>{m.name}</Text>
                     <Text style={styles.methodSub}>{m.sub}</Text>
                   </View>
-                  <View
-                    style={[styles.radio, active && styles.radioActive]}
-                  >
+                  <View style={[styles.radio, active && styles.radioActive]}>
                     {active && <View style={styles.radioDot} />}
                   </View>
                 </TouchableOpacity>
@@ -273,9 +245,10 @@ export function AddFundsScreen({ navigation, route }: Props) {
 
           <View style={styles.cta}>
             <Button
-              title="Pay Now"
-              onPress={() => setStep('processing')}
-              disabled={!method}
+              title={paying ? 'Starting payment…' : 'Pay Now'}
+              onPress={onPayNow}
+              disabled={!method || paying}
+              loading={paying}
               testID="pay-now-btn"
             />
           </View>
@@ -313,7 +286,7 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.inputBg,
+    backgroundColor: colors.surface,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -392,12 +365,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 40,
-  },
-  processingTitle: {
-    color: colors.textPrimary,
-    fontSize: 18,
-    fontWeight: '700',
-    marginTop: spacing.lg,
   },
   muted: {
     color: colors.textMuted,
