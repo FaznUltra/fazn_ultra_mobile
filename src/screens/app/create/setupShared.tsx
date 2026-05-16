@@ -4,11 +4,14 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  FlatList,
   ScrollView,
   StyleSheet,
   Modal,
+  Platform,
 } from 'react-native';
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import { colors, spacing, radius } from '../../../theme';
 import { formatNaira } from '../../../utils/wallet';
 import type { OpponentType } from '../../../types/challenge';
@@ -89,12 +92,7 @@ export function Segmented<T extends string | number>({
             accessibilityLabel={String(opt)}
             testID={`${testIDPrefix}-${opt}`}
           >
-            <Text
-              style={[
-                styles.segmentText,
-                active && styles.segmentTextActive,
-              ]}
-            >
+            <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
               {formatOption ? formatOption(opt) : String(opt)}
             </Text>
           </TouchableOpacity>
@@ -170,12 +168,7 @@ export function DateRow({
       <CalendarSvg size={18} color={colors.textMuted} />
       <View style={styles.dateRowMain}>
         <Text style={styles.dateRowLabel}>{label}</Text>
-        <Text
-          style={[
-            styles.dateRowValue,
-            !value && styles.dateRowPlaceholder,
-          ]}
-        >
+        <Text style={[styles.dateRowValue, !value && styles.dateRowPlaceholder]}>
           {value ? formatDateTime(value) : 'Tap to select'}
         </Text>
       </View>
@@ -194,23 +187,6 @@ export function formatDateTime(d: Date): string {
   });
 }
 
-const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-const HOURS = Array.from({ length: 12 }, (_, i) => i + 1);
-const MINUTES = [0, 15, 30, 45];
-
-function daysInMonth(year: number, month: number) {
-  return new Date(year, month + 1, 0).getDate();
-}
-function firstDayOfWeek(year: number, month: number) {
-  return new Date(year, month, 1).getDay();
-}
-
-type CalStep = 'date' | 'time';
-
 export function PlatformDatePicker({
   visible,
   value,
@@ -226,261 +202,70 @@ export function PlatformDatePicker({
   onClose: () => void;
   testID: string;
 }) {
-  const now = minimumDate;
-  const [viewYear, setViewYear] = useState(now.getFullYear());
-  const [viewMonth, setViewMonth] = useState(now.getMonth());
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
-  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
-  const [step, setStep] = useState<CalStep>('date');
-  const [hour, setHour] = useState(12);
-  const [minute, setMinute] = useState(0);
-  const [ampm, setAmPm] = useState<'AM' | 'PM'>('PM');
+  const [tempDate, setTempDate] = useState<Date>(value);
 
-  if (!visible) return null;
-
-  const totalDays = daysInMonth(viewYear, viewMonth);
-  const firstDay = firstDayOfWeek(viewYear, viewMonth);
-  const cells: (number | null)[] = [
-    ...Array(firstDay).fill(null),
-    ...Array.from({ length: totalDays }, (_, i) => i + 1),
-  ];
-
-  const isDisabled = (day: number) => {
-    const d = new Date(viewYear, viewMonth, day);
-    d.setHours(23, 59, 59, 999);
-    return d < minimumDate;
-  };
-
-  const prevMonth = () => {
-    if (viewMonth === 0) {
-      setViewMonth(11);
-      setViewYear((y) => y - 1);
+  const handleChange = (_event: DateTimePickerEvent, selected?: Date) => {
+    if (!selected) return;
+    if (Platform.OS === 'android') {
+      onChange(selected);
+      onClose();
     } else {
-      setViewMonth((m) => m - 1);
+      setTempDate(selected);
     }
   };
 
-  const nextMonth = () => {
-    if (viewMonth === 11) {
-      setViewMonth(0);
-      setViewYear((y) => y + 1);
-    } else {
-      setViewMonth((m) => m + 1);
-    }
-  };
-
-  const onDayPress = (day: number) => {
-    if (isDisabled(day)) return;
-    setSelectedDay(day);
-    setSelectedYear(viewYear);
-    setSelectedMonth(viewMonth);
-    setStep('time');
-  };
-
-  const onDone = () => {
-    if (selectedDay === null) return;
-    const h24 =
-      ampm === 'AM'
-        ? hour === 12 ? 0 : hour
-        : hour === 12 ? 12 : hour + 12;
-    const d = new Date(selectedYear, selectedMonth, selectedDay, h24, minute);
-    onChange(d);
-    setStep('date');
-    onClose();
-  };
-
-  const onBack = () => setStep('date');
+  if (Platform.OS === 'android') {
+    if (!visible) return null;
+    return (
+      <DateTimePicker
+        value={value}
+        mode="datetime"
+        minimumDate={minimumDate}
+        display="default"
+        onChange={handleChange}
+        testID={testID}
+      />
+    );
+  }
 
   return (
-    <Modal transparent animationType="fade" visible={visible} testID={testID}>
-      <View style={styles.calBackdrop}>
-        <View style={styles.calCard}>
-          {step === 'date' ? (
-            <>
-              <View style={styles.calHeader}>
-                <TouchableOpacity
-                  onPress={prevMonth}
-                  accessibilityRole="button"
-                  accessibilityLabel="Previous month"
-                  testID="cal-prev"
-                  hitSlop={12}
-                >
-                  <Text style={styles.calArrow}>‹</Text>
-                </TouchableOpacity>
-                <Text style={styles.calMonthLabel}>
-                  {MONTH_NAMES[viewMonth]} {viewYear}
-                </Text>
-                <TouchableOpacity
-                  onPress={nextMonth}
-                  accessibilityRole="button"
-                  accessibilityLabel="Next month"
-                  testID="cal-next"
-                  hitSlop={12}
-                >
-                  <Text style={styles.calArrow}>›</Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.weekRow}>
-                {WEEKDAYS.map((d) => (
-                  <Text key={d} style={styles.weekDay}>{d}</Text>
-                ))}
-              </View>
-
-              <View style={styles.calGrid}>
-                {cells.map((day, idx) => {
-                  if (day === null) {
-                    return <View key={`e-${idx}`} style={styles.calCell} />;
-                  }
-                  const disabled = isDisabled(day);
-                  const active =
-                    day === selectedDay &&
-                    viewMonth === selectedMonth &&
-                    viewYear === selectedYear;
-                  return (
-                    <TouchableOpacity
-                      key={`d-${day}`}
-                      style={[
-                        styles.calCell,
-                        styles.calDay,
-                        active && styles.calDayActive,
-                        disabled && styles.calDayDisabled,
-                      ]}
-                      onPress={() => onDayPress(day)}
-                      disabled={disabled}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${day}`}
-                      testID={`cal-day-${day}`}
-                    >
-                      <Text
-                        style={[
-                          styles.calDayText,
-                          active && styles.calDayTextActive,
-                          disabled && styles.calDayTextDisabled,
-                        ]}
-                      >
-                        {day}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              <TouchableOpacity
-                style={styles.calCancelBtn}
-                onPress={onClose}
-                accessibilityRole="button"
-                accessibilityLabel="Cancel"
-                testID="cal-cancel"
-              >
-                <Text style={styles.calCancelText}>Cancel</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <View style={styles.calHeader}>
-                <TouchableOpacity
-                  onPress={onBack}
-                  accessibilityRole="button"
-                  accessibilityLabel="Back to calendar"
-                  testID="cal-back"
-                  hitSlop={12}
-                >
-                  <Text style={styles.calArrow}>‹</Text>
-                </TouchableOpacity>
-                <Text style={styles.calMonthLabel}>
-                  {selectedDay} {MONTH_NAMES[selectedMonth]} {selectedYear}
-                </Text>
-                <View style={{ width: 24 }} />
-              </View>
-
-              <Text style={styles.timeLabel}>Select time</Text>
-
-              <Text style={styles.timeSectionLabel}>Hour</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.timeRow}
-                testID="time-hours"
-              >
-                {HOURS.map((h) => (
-                  <TouchableOpacity
-                    key={h}
-                    style={[styles.timeChip, hour === h && styles.timeChipActive]}
-                    onPress={() => setHour(h)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${h}`}
-                    testID={`hour-${h}`}
-                  >
-                    <Text
-                      style={[
-                        styles.timeChipText,
-                        hour === h && styles.timeChipTextActive,
-                      ]}
-                    >
-                      {h}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              <Text style={styles.timeSectionLabel}>Minute</Text>
-              <View style={styles.timeRow}>
-                {MINUTES.map((m) => (
-                  <TouchableOpacity
-                    key={m}
-                    style={[styles.timeChip, minute === m && styles.timeChipActive]}
-                    onPress={() => setMinute(m)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${m === 0 ? '00' : m}`}
-                    testID={`minute-${m}`}
-                  >
-                    <Text
-                      style={[
-                        styles.timeChipText,
-                        minute === m && styles.timeChipTextActive,
-                      ]}
-                    >
-                      {m === 0 ? '00' : m}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <View style={styles.ampmRow}>
-                {(['AM', 'PM'] as const).map((p) => (
-                  <TouchableOpacity
-                    key={p}
-                    style={[styles.ampmBtn, ampm === p && styles.ampmBtnActive]}
-                    onPress={() => setAmPm(p)}
-                    accessibilityRole="button"
-                    accessibilityLabel={p}
-                    testID={`ampm-${p}`}
-                  >
-                    <Text
-                      style={[
-                        styles.ampmText,
-                        ampm === p && styles.ampmTextActive,
-                      ]}
-                    >
-                      {p}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <TouchableOpacity
-                style={styles.calDoneBtn}
-                onPress={onDone}
-                accessibilityRole="button"
-                accessibilityLabel="Done"
-                testID="cal-done"
-              >
-                <Text style={styles.calDoneText}>Confirm</Text>
-              </TouchableOpacity>
-            </>
-          )}
+    <Modal transparent animationType="slide" visible={visible} testID={testID}>
+      <View style={styles.iosBackdrop}>
+        <TouchableOpacity
+          style={styles.iosDismiss}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Dismiss"
+        />
+        <View style={styles.iosSheet}>
+          <View style={styles.iosSheetHandle} />
+          <View style={styles.iosSheetHeader}>
+            <TouchableOpacity
+              onPress={onClose}
+              accessibilityRole="button"
+              accessibilityLabel="Cancel"
+              testID={`${testID}-cancel`}
+            >
+              <Text style={styles.iosCancelText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => { onChange(tempDate); onClose(); }}
+              accessibilityRole="button"
+              accessibilityLabel="Done"
+              testID={`${testID}-done`}
+            >
+              <Text style={styles.iosDoneText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+          <DateTimePicker
+            value={tempDate}
+            mode="datetime"
+            minimumDate={minimumDate}
+            display="spinner"
+            onChange={handleChange}
+            themeVariant="dark"
+            testID={`${testID}-picker`}
+          />
         </View>
       </View>
     </Modal>
@@ -493,25 +278,107 @@ const OPPONENT_OPTIONS: {
   desc: string;
   Icon: React.FC<{ size?: number; color?: string }>;
 }[] = [
-  {
-    type: 'public',
-    title: 'Public',
-    desc: 'Anyone can accept',
-    Icon: GlobeSvg,
-  },
-  {
-    type: 'private',
-    title: 'Friends Only',
-    desc: 'Only your friends see this',
-    Icon: LockSvg,
-  },
-  {
-    type: 'direct',
-    title: 'Direct Challenge',
-    desc: 'Challenge a specific friend',
-    Icon: PersonAddSvg,
-  },
+  { type: 'public', title: 'Public', desc: 'Anyone can accept', Icon: GlobeSvg },
+  { type: 'private', title: 'Friends Only', desc: 'Only your friends see this', Icon: LockSvg },
+  { type: 'direct', title: 'Direct Challenge', desc: 'Challenge a specific friend', Icon: PersonAddSvg },
 ];
+
+export function FriendsDrawer({
+  visible,
+  selected,
+  onSelect,
+  onClose,
+}: {
+  visible: boolean;
+  selected: MockFriend | null;
+  onSelect: (f: MockFriend) => void;
+  onClose: () => void;
+}) {
+  const [search, setSearch] = useState('');
+  const filtered = MOCK_FRIENDS.filter((f) =>
+    f.name.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  return (
+    <Modal
+      transparent
+      animationType="slide"
+      visible={visible}
+      onRequestClose={onClose}
+      testID="friends-drawer"
+    >
+      <View style={styles.drawerBackdrop}>
+        <TouchableOpacity
+          style={styles.drawerDismiss}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+        />
+        <View style={styles.drawerSheet}>
+          <View style={styles.drawerHandle} />
+          <View style={styles.drawerHeader}>
+            <Text style={styles.drawerTitle}>Choose opponent</Text>
+            <TouchableOpacity
+              onPress={onClose}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              testID="friends-drawer-close"
+            >
+              <Text style={styles.drawerClose}>✕</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.drawerSearch}>
+            <TextInput
+              style={styles.drawerSearchInput}
+              placeholder="Search friends..."
+              placeholderTextColor={colors.textMuted}
+              value={search}
+              onChangeText={setSearch}
+              accessibilityLabel="Search friends"
+              testID="friends-search"
+            />
+          </View>
+
+          <ScrollView
+            style={styles.drawerList}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            testID="friends-scroll"
+          >
+            {filtered.length === 0 ? (
+              <Text style={styles.drawerEmpty}>No friends found</Text>
+            ) : (
+              filtered.map((item, idx) => {
+                const picked = selected?.id === item.id;
+                return (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={[
+                      styles.drawerRow,
+                      idx < filtered.length - 1 && styles.drawerRowBorder,
+                      picked && styles.drawerRowActive,
+                    ]}
+                    onPress={() => { onSelect(item); onClose(); }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Challenge ${item.name}`}
+                    testID={`friend-select-${item.id}`}
+                  >
+                    <View style={styles.avatar}>
+                      <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
+                    </View>
+                    <Text style={styles.drawerFriendName}>{item.name}</Text>
+                    {picked && <CheckSvg size={18} color={colors.success} />}
+                  </TouchableOpacity>
+                );
+              })
+            )}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
 
 export function OpponentPicker({
   value,
@@ -524,6 +391,8 @@ export function OpponentPicker({
   selectedFriend: MockFriend | null;
   onSelectFriend: (f: MockFriend) => void;
 }) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
   return (
     <View>
       {OPPONENT_OPTIONS.map(({ type, title, desc, Icon }) => {
@@ -532,26 +401,19 @@ export function OpponentPicker({
           <TouchableOpacity
             key={type}
             style={[styles.oppCard, active && styles.oppCardActive]}
-            onPress={() => onChange(type)}
+            onPress={() => {
+              onChange(type);
+              if (type === 'direct') setDrawerOpen(true);
+            }}
             activeOpacity={0.85}
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
             accessibilityLabel={title}
             testID={`opponent-${type}`}
           >
-            <Icon
-              size={22}
-              color={active ? colors.primaryLight : colors.textSecondary}
-            />
+            <Icon size={22} color={active ? colors.primaryLight : colors.textSecondary} />
             <View style={styles.oppMain}>
-              <Text
-                style={[
-                  styles.oppTitle,
-                  active && styles.oppTitleActive,
-                ]}
-              >
-                {title}
-              </Text>
+              <Text style={[styles.oppTitle, active && styles.oppTitleActive]}>{title}</Text>
               <Text style={styles.oppDesc}>{desc}</Text>
             </View>
             {active && <CheckSvg size={18} color={colors.primaryLight} />}
@@ -559,50 +421,40 @@ export function OpponentPicker({
         );
       })}
 
-      {value === 'direct' && (
-        <View style={styles.friendsWrap} testID="friends-list">
-          <FlatList
-            data={MOCK_FRIENDS}
-            scrollEnabled={false}
-            keyExtractor={(f) => f.id}
-            ItemSeparatorComponent={() => (
-              <View style={styles.friendSeparator} />
-            )}
-            renderItem={({ item }) => {
-              const picked = selectedFriend?.id === item.id;
-              return (
-                <View style={styles.friendRow} testID={`friend-${item.id}`}>
-                  <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>
-                      {item.name.charAt(0)}
-                    </Text>
-                  </View>
-                  <Text style={styles.friendName}>{item.name}</Text>
-                  {picked ? (
-                    <View
-                      style={styles.friendPicked}
-                      testID={`friend-picked-${item.id}`}
-                    >
-                      <CheckSvg size={16} color={colors.success} />
-                      <Text style={styles.friendPickedText}>Selected</Text>
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.friendSelectBtn}
-                      onPress={() => onSelectFriend(item)}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Select ${item.name}`}
-                      testID={`friend-select-${item.id}`}
-                    >
-                      <Text style={styles.friendSelectText}>Select</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              );
-            }}
-          />
-        </View>
+      {value === 'direct' && selectedFriend && (
+        <TouchableOpacity
+          style={styles.selectedFriendRow}
+          onPress={() => setDrawerOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Change opponent"
+          testID="selected-friend-row"
+        >
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{selectedFriend.name.charAt(0)}</Text>
+          </View>
+          <Text style={styles.selectedFriendName}>{selectedFriend.name}</Text>
+          <Text style={styles.selectedFriendChange}>Change</Text>
+        </TouchableOpacity>
       )}
+
+      {value === 'direct' && !selectedFriend && (
+        <TouchableOpacity
+          style={styles.chooseFriendBtn}
+          onPress={() => setDrawerOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Choose friend"
+          testID="choose-friend-btn"
+        >
+          <Text style={styles.chooseFriendText}>Choose a friend</Text>
+        </TouchableOpacity>
+      )}
+
+      <FriendsDrawer
+        visible={drawerOpen}
+        selected={selectedFriend}
+        onSelect={onSelectFriend}
+        onClose={() => setDrawerOpen(false)}
+      />
     </View>
   );
 }
@@ -610,12 +462,7 @@ export function OpponentPicker({
 export function useDateState() {
   const [acceptanceDue, setAcceptanceDue] = useState<Date | null>(null);
   const [gameStartTime, setGameStartTime] = useState<Date | null>(null);
-  return {
-    acceptanceDue,
-    setAcceptanceDue,
-    gameStartTime,
-    setGameStartTime,
-  };
+  return { acceptanceDue, setAcceptanceDue, gameStartTime, setGameStartTime };
 }
 
 const styles = StyleSheet.create({
@@ -631,11 +478,7 @@ const styles = StyleSheet.create({
   },
   chipLabel: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
   chipValue: { fontSize: 14, fontWeight: '700' },
-  segmented: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
+  segmented: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
   segment: {
     flex: 1,
     minHeight: 44,
@@ -646,10 +489,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  segmentActive: {
-    backgroundColor: colors.primary + '22',
-    borderColor: colors.primary,
-  },
+  segmentActive: { backgroundColor: colors.primary + '22', borderColor: colors.primary },
   segmentText: { color: colors.textSecondary, fontSize: 14, fontWeight: '600' },
   segmentTextActive: { color: colors.primaryLight },
   stakeInputWrap: {
@@ -660,28 +500,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     minHeight: 52,
   },
-  stakeSymbol: {
-    color: colors.textSecondary,
-    fontSize: 18,
-    fontWeight: '700',
-    marginRight: spacing.sm,
-  },
-  stakeInput: {
-    flex: 1,
-    color: colors.textPrimary,
-    fontSize: 18,
-    fontWeight: '700',
-    padding: 0,
-  },
-  stakeError: {
-    color: colors.error,
-    fontSize: 12,
-    marginTop: spacing.xs,
-  },
-  stakeBreakdown: {
-    marginTop: spacing.sm,
-    gap: spacing.xs,
-  },
+  stakeSymbol: { color: colors.textSecondary, fontSize: 18, fontWeight: '700', marginRight: spacing.sm },
+  stakeInput: { flex: 1, color: colors.textPrimary, fontSize: 18, fontWeight: '700', padding: 0 },
+  stakeError: { color: colors.error, fontSize: 12, marginTop: spacing.xs },
+  stakeBreakdown: { marginTop: spacing.sm, gap: spacing.xs },
   stakeBreakdownText: { color: colors.textMuted, fontSize: 13 },
   stakeWinText: { color: colors.success, fontSize: 13, fontWeight: '700' },
   dateRow: {
@@ -696,146 +518,102 @@ const styles = StyleSheet.create({
   },
   dateRowMain: { flex: 1 },
   dateRowLabel: { color: colors.textMuted, fontSize: 12, fontWeight: '600' },
-  dateRowValue: {
-    color: colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: 2,
-  },
+  dateRowValue: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', marginTop: 2 },
   dateRowPlaceholder: { color: colors.textMuted, fontWeight: '400' },
-  calBackdrop: {
-    flex: 1,
-    backgroundColor: '#000000cc',
-    justifyContent: 'flex-end',
-  },
-  calCard: {
+  iosBackdrop: { flex: 1, justifyContent: 'flex-end' },
+  iosDismiss: { flex: 1, backgroundColor: '#000000aa' },
+  iosSheet: {
     backgroundColor: colors.card,
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
     paddingBottom: spacing.xl,
   },
-  calHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-  },
-  calArrow: {
-    color: colors.textPrimary,
-    fontSize: 28,
-    lineHeight: 30,
-    fontWeight: '300',
-  },
-  calMonthLabel: {
-    color: colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  weekRow: {
-    flexDirection: 'row',
+  iosSheetHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.border,
+    alignSelf: 'center',
+    marginTop: spacing.sm,
     marginBottom: spacing.xs,
   },
-  weekDay: {
-    flex: 1,
-    textAlign: 'center',
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  calGrid: {
+  iosSheetHeader: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  calCell: {
-    width: `${100 / 7}%`,
-    aspectRatio: 1,
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  calDay: {},
-  calDayActive: {
-    backgroundColor: colors.primary,
-    borderRadius: 999,
-  },
-  calDayDisabled: {},
-  calDayText: {
-    color: colors.textPrimary,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  calDayTextActive: { color: '#fff', fontWeight: '700' },
-  calDayTextDisabled: { color: colors.border },
-  calCancelBtn: {
-    marginTop: spacing.md,
-    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
-  calCancelText: { color: colors.textMuted, fontSize: 14 },
-  calDoneBtn: {
-    marginTop: spacing.lg,
-    minHeight: 48,
-    borderRadius: radius.md,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+  iosCancelText: { color: colors.textMuted, fontSize: 16 },
+  iosDoneText: { color: colors.primaryLight, fontSize: 16, fontWeight: '700' },
+  drawerBackdrop: { flex: 1, justifyContent: 'flex-end' },
+  drawerDismiss: { flex: 1, backgroundColor: '#000000aa' },
+  drawerSheet: {
+    backgroundColor: colors.card,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    maxHeight: '75%',
   },
-  calDoneText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
-  timeLabel: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    marginBottom: spacing.md,
-  },
-  timeSectionLabel: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: '600',
+  drawerHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.border,
+    alignSelf: 'center',
+    marginTop: spacing.sm,
     marginBottom: spacing.xs,
   },
-  timeRow: {
+  drawerHeader: {
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  timeChip: {
-    minWidth: 44,
-    height: 44,
-    borderRadius: radius.md,
+  drawerTitle: { color: colors.textPrimary, fontSize: 17, fontWeight: '700' },
+  drawerClose: { color: colors.textMuted, fontSize: 18 },
+  drawerSearch: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  drawerSearchInput: {
     backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    color: colors.textPrimary,
+    fontSize: 15,
+  },
+  drawerList: { flexGrow: 0 },
+  drawerEmpty: {
+    color: colors.textMuted,
+    fontSize: 14,
+    textAlign: 'center',
+    paddingVertical: spacing.xl,
+  },
+  drawerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm + 4,
+    paddingHorizontal: spacing.lg,
+  },
+  drawerRowBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
+  drawerRowActive: { backgroundColor: colors.primary + '14' },
+  drawerFriendName: { flex: 1, color: colors.textPrimary, fontSize: 15, fontWeight: '500' },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primary + '33',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
   },
-  timeChipActive: {
-    backgroundColor: colors.primary + '22',
-    borderColor: colors.primary,
-  },
-  timeChipText: { color: colors.textSecondary, fontSize: 15, fontWeight: '600' },
-  timeChipTextActive: { color: colors.primaryLight },
-  ampmRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  ampmBtn: {
-    flex: 1,
-    height: 48,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ampmBtnActive: {
-    backgroundColor: colors.primary + '22',
-    borderColor: colors.primary,
-  },
-  ampmText: { color: colors.textSecondary, fontSize: 15, fontWeight: '700' },
-  ampmTextActive: { color: colors.primaryLight },
+  avatarText: { color: colors.primaryLight, fontSize: 16, fontWeight: '700' },
   oppCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -848,61 +626,31 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  oppCardActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primary + '14',
-  },
+  oppCardActive: { borderColor: colors.primary, backgroundColor: colors.primary + '14' },
   oppMain: { flex: 1 },
   oppTitle: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
   oppTitleActive: { color: colors.primaryLight },
-  oppDesc: {
-    color: colors.textSecondary,
-    fontSize: 13,
-    marginTop: 2,
-  },
-  friendsWrap: {
-    backgroundColor: colors.card,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginTop: spacing.xs,
-  },
-  friendSeparator: { height: 1, backgroundColor: colors.border },
-  friendRow: {
+  oppDesc: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
+  selectedFriendRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.primary + '33',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: { color: colors.primaryLight, fontSize: 15, fontWeight: '700' },
-  friendName: { flex: 1, color: colors.textPrimary, fontSize: 14 },
-  friendSelectBtn: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
     paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: radius.sm,
+    paddingVertical: spacing.sm + 2,
+    borderWidth: 1,
+    borderColor: colors.primary + '66',
+  },
+  selectedFriendName: { flex: 1, color: colors.textPrimary, fontSize: 15, fontWeight: '500' },
+  selectedFriendChange: { color: colors.primaryLight, fontSize: 13, fontWeight: '600' },
+  chooseFriendBtn: {
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.primary,
-  },
-  friendSelectText: {
-    color: colors.primaryLight,
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  friendPicked: {
-    flexDirection: 'row',
+    borderStyle: 'dashed',
     alignItems: 'center',
-    gap: spacing.xs,
+    paddingVertical: spacing.sm + 4,
   },
-  friendPickedText: {
-    color: colors.success,
-    fontSize: 13,
-    fontWeight: '700',
-  },
+  chooseFriendText: { color: colors.primaryLight, fontSize: 14, fontWeight: '600' },
 });

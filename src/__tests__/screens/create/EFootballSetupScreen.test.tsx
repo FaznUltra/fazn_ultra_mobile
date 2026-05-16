@@ -27,6 +27,21 @@ jest.mock('react-native-svg', () => {
   };
 });
 
+jest.mock('@react-native-community/datetimepicker', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return {
+    __esModule: true,
+    default: ({ onChange, testID, value }: { onChange: (e: object, d: Date) => void; testID?: string; value: Date }) =>
+      React.createElement(View, {
+        testID,
+        onStartShouldSetResponder: () => true,
+        onChange: () => onChange({}, new Date(Date.now() + 10 * 3_600_000)),
+        value,
+      }),
+  };
+});
+
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({ navigate: mockNavigate, goBack: mockGoBack }),
   useRoute: () => ({
@@ -38,16 +53,6 @@ jest.mock('@react-navigation/native', () => ({
     },
   }),
 }));
-
-function pickDate(utils: ReturnType<typeof render>, rowID: string, pickerID: string) {
-  fireEvent.press(utils.getByTestId(rowID));
-  fireEvent.press(utils.getByTestId('cal-next'));
-  fireEvent.press(utils.getByTestId('cal-day-15'));
-  fireEvent.press(utils.getByTestId('hour-6'));
-  fireEvent.press(utils.getByTestId('minute-0'));
-  fireEvent.press(utils.getByTestId('ampm-PM'));
-  fireEvent.press(utils.getByTestId('cal-done'));
-}
 
 describe('EFootballSetupScreen', () => {
   beforeEach(() => jest.clearAllMocks());
@@ -78,17 +83,24 @@ describe('EFootballSetupScreen', () => {
   });
 
   it('navigates to ChallengeConfirm once the form is valid', () => {
-    const utils = render(<EFootballSetupScreen />);
-    const { getByTestId } = utils;
+    const { getByTestId } = render(<EFootballSetupScreen />);
     fireEvent.changeText(getByTestId('stake-input'), '1000');
-    pickDate(utils, 'acceptance-row', 'acceptance-picker');
-    pickDate(utils, 'start-row', 'start-picker');
+    fireEvent.press(getByTestId('acceptance-row'));
+    fireEvent.press(getByTestId('acceptance-picker-done'));
+    fireEvent.press(getByTestId('start-row'));
+    fireEvent.press(getByTestId('start-picker-done'));
     fireEvent.press(getByTestId('opponent-public'));
     fireEvent.press(getByTestId('efootball-continue-btn'));
     expect(mockNavigate).toHaveBeenCalledWith(
       'ChallengeConfirm',
       expect.objectContaining({ gameId: 'efootball_mob' }),
     );
+  });
+
+  it('direct challenge opens friends drawer', () => {
+    const { getByTestId } = render(<EFootballSetupScreen />);
+    fireEvent.press(getByTestId('opponent-direct'));
+    expect(getByTestId('friends-drawer')).toBeTruthy();
   });
 
   it('back button calls goBack', () => {
