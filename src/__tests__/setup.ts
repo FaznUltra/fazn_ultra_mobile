@@ -5,13 +5,8 @@ jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper', () => ({}), {
   virtual: true,
 });
 
-// WebView mock — tests that render PaystackSheet get a plain View
-jest.mock('react-native-webview', () => {
-  const React = require('react');
-  const { View } = require('react-native');
-  return {
-    __esModule: true,
-    default: (props: object) => React.createElement(View, { testID: 'webview', ...props }),
-    WebView: (props: object) => React.createElement(View, { testID: 'webview', ...props }),
-  };
-});
+// expo-web-browser mock
+jest.mock('expo-web-browser', () => ({
+  openAuthSessionAsync: jest.fn().mockResolvedValue({ type: 'cancel' }),
+  dismissBrowser: jest.fn(),
+}));
