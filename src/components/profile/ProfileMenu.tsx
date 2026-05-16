@@ -115,13 +115,22 @@ function MenuItem({ icon, label, onPress, danger = false, testID }: MenuItemProp
 interface Props {
   onLogout: () => void;
   onWalletPress: () => void;
+  onEditPress?: () => void;
+  onPrivacyPress: () => void;
+  onSettingsPress: () => void;
   testID?: string;
 }
 
 const soon = (label: string) =>
   Alert.alert(label, 'This feature is coming soon.');
 
-export function ProfileMenu({ onLogout, onWalletPress, testID }: Props) {
+export function ProfileMenu({
+  onLogout,
+  onWalletPress,
+  onPrivacyPress,
+  onSettingsPress,
+  testID,
+}: Props) {
   return (
     <View testID={testID}>
       {/* Account section */}
@@ -148,14 +157,14 @@ export function ProfileMenu({ onLogout, onWalletPress, testID }: Props) {
         <MenuItem
           icon={<PrivacyIcon />}
           label="Privacy"
-          onPress={() => soon('Privacy')}
+          onPress={onPrivacyPress}
           testID="menu-privacy"
         />
         <View style={styles.sep} />
         <MenuItem
           icon={<SettingsIcon />}
           label="Settings"
-          onPress={() => soon('Settings')}
+          onPress={onSettingsPress}
           testID="menu-settings"
         />
       </View>

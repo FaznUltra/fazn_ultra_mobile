@@ -5,7 +5,7 @@ import { TabBar } from '../components/navigation/TabBar';
 import { HomeNavigator } from './HomeNavigator';
 import { ArenaScreen } from '../screens/app/ArenaScreen';
 import { FriendsNavigator } from './FriendsNavigator';
-import { ProfileScreen } from '../screens/app/ProfileScreen';
+import { ProfileNavigator } from './ProfileNavigator';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
@@ -25,7 +25,7 @@ export function AppNavigator() {
       <Tab.Screen name="Arena" component={ArenaScreen} />
       <Tab.Screen name="Create" component={CreatePlaceholder} />
       <Tab.Screen name="Friends" component={FriendsNavigator} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Profile" component={ProfileNavigator} />
     </Tab.Navigator>
   );
 }

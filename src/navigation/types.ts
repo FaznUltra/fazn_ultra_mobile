@@ -45,7 +45,12 @@ export type FriendsStackParamList = {
   FriendSearch: undefined;
   FriendRequests: undefined;
 };
-export type ProfileStackParamList = { ProfileMain: undefined };
+export type ProfileStackParamList = {
+  ProfileMain: undefined;
+  EditProfile: undefined;
+  Privacy: undefined;
+  Settings: undefined;
+};
 
 export type AuthScreenProps<T extends keyof AuthStackParamList> =
   NativeStackScreenProps<AuthStackParamList, T>;

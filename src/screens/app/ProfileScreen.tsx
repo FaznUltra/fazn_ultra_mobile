@@ -1,6 +1,8 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { ProfileStackParamList } from '../../navigation/types';
 import { ScreenContainer } from '../../components/ui/ScreenContainer';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { ProfileHeader } from '../../components/profile/ProfileHeader';
@@ -14,11 +16,16 @@ import { useProfile } from '../../hooks/useProfile';
 import { useAuthStore } from '../../store/auth.store';
 import { colors, spacing } from '../../theme';
 
+type Nav = NativeStackScreenProps<
+  ProfileStackParamList,
+  'ProfileMain'
+>['navigation'];
+
 export function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const { state, retry } = useProfile();
-  const navigation = useNavigation();
+  const navigation = useNavigation<Nav>();
 
   const goToWallet = () =>
     navigation.dispatch(
@@ -62,7 +69,7 @@ export function ProfileScreen() {
       <ProfileHeader
         user={user}
         globalRank={data.stats.globalRank}
-        onEditPress={() => {}}
+        onEditPress={() => navigation.navigate('EditProfile')}
         testID="profile-header"
       />
 
@@ -81,7 +88,13 @@ export function ProfileScreen() {
       <SectionHeader title="Last 5 Results" />
       <RecentResults results={data.recentResults} testID="profile-results" />
 
-      <ProfileMenu onLogout={logout} onWalletPress={goToWallet} testID="profile-menu" />
+      <ProfileMenu
+        onLogout={logout}
+        onWalletPress={goToWallet}
+        onPrivacyPress={() => navigation.navigate('Privacy')}
+        onSettingsPress={() => navigation.navigate('Settings')}
+        testID="profile-menu"
+      />
     </ScreenContainer>
   );
 }
