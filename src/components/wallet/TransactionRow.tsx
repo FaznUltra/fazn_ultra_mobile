@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors, spacing, radius } from '../../theme';
 import type { Transaction, TransactionType } from '../../types/wallet';
-import { formatFt } from '../../utils/wallet';
+import { formatNaira } from '../../utils/wallet';
 import { transactionIcon } from './WalletIcons';
 
 const AMBER = '#f59e0b';
@@ -70,8 +70,8 @@ export function TransactionRow({ transaction, onPress }: Props) {
       activeOpacity={onPress ? 0.7 : 1}
       disabled={!onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${transaction.description}, ${sign}${formatFt(
-        transaction.ftAmount,
+      accessibilityLabel={`${transaction.description}, ${sign}${formatNaira(
+        transaction.amount,
       )}`}
       testID={`transaction-row-${transaction.id}`}
     >
@@ -91,7 +91,7 @@ export function TransactionRow({ transaction, onPress }: Props) {
       <View style={styles.right}>
         <Text style={[styles.amount, { color: amountColor }]}>
           {sign}
-          {formatFt(transaction.ftAmount)}
+          {formatNaira(transaction.amount)}
         </Text>
         {(isPending || isFailed) && (
           <View

@@ -15,28 +15,25 @@ import { colors, spacing, radius } from '../../../theme';
 import { Button } from '../../../components/ui/Button';
 import { ChevronLeftIcon, CheckIcon } from '../../../components/wallet/WalletIcons';
 import { useWallet } from '../../../hooks/useWallet';
-import { formatFt, formatReal, ftToSellReal } from '../../../utils/wallet';
-import type { Currency, BankDetails } from '../../../types/wallet';
+import {
+  formatNaira,
+  MIN_WITHDRAWAL,
+  WITHDRAWAL_FEE,
+} from '../../../utils/wallet';
+import type { BankDetails } from '../../../types/wallet';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Withdraw'>;
 type Step = 'amount' | 'bank' | 'confirm';
 
-const MIN_WITHDRAWAL = 1000;
-const FEE_FT = 100;
-
 export function WithdrawScreen({ navigation }: Props) {
   const { state, withdraw } = useWallet();
-  const balance = state.status === 'success' ? state.data.ftBalance : 0;
-  const currency: Currency =
-    state.status === 'success' ? state.data.currency : 'NGN';
+  const balance = state.status === 'success' ? state.data.balance : 0;
 
   const [step, setStep] = useState<Step>('amount');
   const [amountStr, setAmountStr] = useState('');
   const [accountName, setAccountName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [bankName, setBankName] = useState('');
-  const [country, setCountry] = useState('Nigeria');
-  const [swift, setSwift] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const checkScale = useRef(new Animated.Value(0)).current;
 
@@ -57,7 +54,6 @@ export function WithdrawScreen({ navigation }: Props) {
       accountName,
       accountNumber,
       bankName,
-      swiftCode: swift || undefined,
     };
     void withdraw(amount, 'bank_transfer', details);
     setSubmitted(true);
@@ -79,7 +75,7 @@ export function WithdrawScreen({ navigation }: Props) {
           </Animated.View>
           <Text style={styles.successTitle}>Withdrawal Submitted</Text>
           <Text style={styles.muted}>
-            We&apos;ll notify you when it&apos;s processed
+            {formatNaira(amount - WITHDRAWAL_FEE)} will be sent to your bank
           </Text>
           <View style={styles.doneWrap}>
             <Button title="Done" onPress={() => navigation.goBack()} />
@@ -108,7 +104,7 @@ export function WithdrawScreen({ navigation }: Props) {
         >
           <ChevronLeftIcon size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.title}>Withdraw Tokens</Text>
+        <Text style={styles.title}>Withdraw</Text>
         <View style={styles.spacer} />
       </View>
 
@@ -120,24 +116,22 @@ export function WithdrawScreen({ navigation }: Props) {
           <>
             <View style={styles.chip}>
               <Text style={styles.chipText}>
-                Available: {formatFt(balance)}
+                Available: {formatNaira(balance)}
               </Text>
             </View>
 
-            <TextInput
-              style={styles.input}
-              value={amountStr}
-              onChangeText={(t) => setAmountStr(t.replace(/[^0-9]/g, ''))}
-              placeholder="Amount in Tokens"
-              placeholderTextColor={colors.textMuted}
-              keyboardType="numeric"
-              testID="withdraw-amount-input"
-            />
-            {amount > 0 && (
-              <Text style={styles.equiv}>
-                ≈ {formatReal(ftToSellReal(amount, currency), currency)}
-              </Text>
-            )}
+            <View style={styles.inputRow}>
+              <Text style={styles.nairaPrefix}>₦</Text>
+              <TextInput
+                style={styles.inputField}
+                value={amountStr}
+                onChangeText={(t) => setAmountStr(t.replace(/[^0-9]/g, ''))}
+                placeholder="Amount in Naira"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="numeric"
+                testID="withdraw-amount-input"
+              />
+            </View>
 
             <View style={styles.quickRow}>
               {[
@@ -160,7 +154,7 @@ export function WithdrawScreen({ navigation }: Props) {
 
             {belowMin && (
               <Text style={styles.warn} testID="withdraw-min-warning">
-                Minimum withdrawal is {formatFt(MIN_WITHDRAWAL)}
+                Minimum withdrawal is {formatNaira(MIN_WITHDRAWAL)}
               </Text>
             )}
             {overBalance && (
@@ -215,30 +209,6 @@ export function WithdrawScreen({ navigation }: Props) {
               testID="bank-name"
             />
 
-            <Text style={styles.fieldLabel}>Country</Text>
-            <TextInput
-              style={styles.input}
-              value={country}
-              onChangeText={setCountry}
-              placeholder="Nigeria"
-              placeholderTextColor={colors.textMuted}
-              testID="bank-country"
-            />
-
-            {country.trim().toLowerCase() !== 'nigeria' && (
-              <>
-                <Text style={styles.fieldLabel}>SWIFT / Sort Code</Text>
-                <TextInput
-                  style={styles.input}
-                  value={swift}
-                  onChangeText={setSwift}
-                  placeholder="Optional"
-                  placeholderTextColor={colors.textMuted}
-                  testID="bank-swift"
-                />
-              </>
-            )}
-
             <View style={styles.cta}>
               <Button
                 title="Submit Withdrawal"
@@ -253,10 +223,14 @@ export function WithdrawScreen({ navigation }: Props) {
         {step === 'confirm' && (
           <>
             <View style={styles.summary}>
-              <Row label="Amount" value={formatFt(amount)} />
+              <Row label="Amount" value={formatNaira(amount)} />
+              <Row
+                label="Processing fee"
+                value={`− ${formatNaira(WITHDRAWAL_FEE)}`}
+              />
               <Row
                 label="You receive"
-                value={formatReal(ftToSellReal(amount, currency), currency)}
+                value={formatNaira(amount - WITHDRAWAL_FEE)}
               />
               <Row label="Bank" value={`${bankName} · ${accountNumber}`} />
               <Row label="Estimated arrival" value="1–3 business days" />
@@ -264,7 +238,8 @@ export function WithdrawScreen({ navigation }: Props) {
 
             <View style={styles.feeWarn}>
               <Text style={styles.feeWarnText}>
-                Withdrawal fees: {formatFt(FEE_FT)} processing fee
+                {formatNaira(WITHDRAWAL_FEE)} processing fee deducted from your
+                withdrawal
               </Text>
             </View>
 
@@ -329,11 +304,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
   },
-  equiv: {
-    color: colors.primaryLight,
-    fontSize: 13,
-    fontWeight: '600',
-    marginTop: spacing.sm,
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.inputBg,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+  },
+  nairaPrefix: {
+    color: colors.textSecondary,
+    fontSize: 16,
+    fontWeight: '700',
+    marginRight: spacing.sm,
+  },
+  inputField: {
+    flex: 1,
+    color: colors.textPrimary,
+    fontSize: 16,
+    paddingVertical: spacing.md,
   },
   quickRow: {
     flexDirection: 'row',

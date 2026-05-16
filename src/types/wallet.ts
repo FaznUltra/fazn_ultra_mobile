@@ -1,4 +1,3 @@
-export type Currency = 'USD' | 'NGN' | 'GBP' | 'EUR';
 export type TransactionType =
   | 'top_up'
   | 'withdrawal'
@@ -12,7 +11,6 @@ export type PaymentMethod =
   | 'paystack_card'
   | 'paystack_bank'
   | 'paystack_ussd'
-  | 'stripe_card'
   | 'bank_transfer';
 export type WithdrawalMethod = 'bank_transfer' | 'paystack_nuban';
 
@@ -20,9 +18,7 @@ export interface Transaction {
   id: string;
   type: TransactionType;
   status: TransactionStatus;
-  ftAmount: number; // FazToken amount
-  realAmount: number; // real currency equivalent
-  currency: Currency;
+  amount: number; // Naira
   description: string;
   reference: string;
   createdAt: string;
@@ -37,30 +33,22 @@ export interface Transaction {
 }
 
 export interface WalletData {
-  ftBalance: number;
-  pendingFt: number; // FT in pending transactions
-  totalWon: number; // lifetime FT won
-  totalSpent: number; // lifetime FT spent
-  currency: Currency;
-  country: string; // ISO 3166-1 alpha-2
+  balance: number; // Naira
+  pendingAmount: number; // Naira in pending transactions
+  totalWon: number; // lifetime Naira won
+  totalSpent: number; // lifetime Naira spent
   transactions: Transaction[];
-  availablePaymentMethods: PaymentMethod[];
 }
 
 export interface TopUpOption {
-  ftAmount: number;
-  realAmount: number;
-  currency: Currency;
-  label: string; // e.g. "500 FT"
-  bonus?: number; // bonus FT (e.g. 50 FT free)
+  amount: number; // Naira
+  label: string; // e.g. "₦5,000"
   popular?: boolean;
+  bonus?: number; // bonus Naira (e.g. ₦500 free on large top-ups)
 }
 
 export interface BankDetails {
   accountName: string;
   accountNumber: string;
   bankName: string;
-  sortCode?: string; // UK
-  routingNumber?: string; // US
-  swiftCode?: string;
 }

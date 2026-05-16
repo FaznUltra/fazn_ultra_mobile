@@ -15,12 +15,7 @@ import { useWallet } from '../../../hooks/useWallet';
 import { TopUpCard } from '../../../components/wallet/TopUpCard';
 import { TransactionRow } from '../../../components/wallet/TransactionRow';
 import { ChevronLeftIcon } from '../../../components/wallet/WalletIcons';
-import {
-  formatFt,
-  formatReal,
-  ftToBuyReal,
-  topUpPresets,
-} from '../../../utils/wallet';
+import { formatNaira, TOP_UP_PRESETS } from '../../../utils/wallet';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'WalletMain'>;
 
@@ -62,7 +57,7 @@ export function WalletScreen({ navigation }: Props) {
   }
 
   const { data } = state;
-  const presets = topUpPresets(data.currency);
+  const presets = TOP_UP_PRESETS;
   const recent = data.transactions.slice(0, 5);
 
   const headerOpacity = scrollY.interpolate({
@@ -113,16 +108,13 @@ export function WalletScreen({ navigation }: Props) {
 
           <Text style={styles.balanceLabel}>Available balance</Text>
           <Text style={styles.balance} testID="wallet-balance">
-            {formatFt(data.ftBalance)}
-          </Text>
-          <Text style={styles.balanceReal}>
-            ≈ {formatReal(ftToBuyReal(data.ftBalance, data.currency), data.currency)}
+            {formatNaira(data.balance)}
           </Text>
 
-          {data.pendingFt > 0 && (
+          {data.pendingAmount > 0 && (
             <View style={styles.pendingBadge} testID="wallet-pending">
               <Text style={styles.pendingText}>
-                ⏳ {formatFt(data.pendingFt)} pending
+                ⏳ {formatNaira(data.pendingAmount)} pending
               </Text>
             </View>
           )}
@@ -132,10 +124,10 @@ export function WalletScreen({ navigation }: Props) {
               style={[styles.actionBtn, styles.actionFilled]}
               onPress={() => navigation.navigate('AddFunds', {})}
               accessibilityRole="button"
-              accessibilityLabel="Add Tokens"
+              accessibilityLabel="Add Money"
               testID="wallet-add-btn"
             >
-              <Text style={styles.actionFilledText}>+ Add Tokens</Text>
+              <Text style={styles.actionFilledText}>+ Add Money</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionBtn, styles.actionOutline]}
@@ -149,7 +141,8 @@ export function WalletScreen({ navigation }: Props) {
           </View>
 
           <Text style={styles.statRow}>
-            Won {formatFt(data.totalWon)} · Spent {formatFt(data.totalSpent)}
+            Won {formatNaira(data.totalWon)} · Spent{' '}
+            {formatNaira(data.totalSpent)}
           </Text>
         </Animated.View>
 
@@ -164,11 +157,11 @@ export function WalletScreen({ navigation }: Props) {
           >
             {presets.map((opt) => (
               <TopUpCard
-                key={opt.ftAmount}
+                key={opt.amount}
                 option={opt}
                 onPress={() =>
                   navigation.navigate('AddFunds', {
-                    preselectedAmount: opt.ftAmount,
+                    preselectedAmount: opt.amount,
                   })
                 }
               />
@@ -255,11 +248,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 48,
     fontWeight: '800',
-    marginTop: spacing.xs,
-  },
-  balanceReal: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 14,
     marginTop: spacing.xs,
   },
   pendingBadge: {

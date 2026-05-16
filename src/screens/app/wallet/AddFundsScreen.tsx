@@ -21,35 +21,27 @@ import {
   WalletGlyph,
 } from '../../../components/wallet/WalletIcons';
 import { useWallet } from '../../../hooks/useWallet';
-import {
-  formatFt,
-  formatReal,
-  ftToBuyReal,
-  topUpPresets,
-} from '../../../utils/wallet';
-import type { Currency, PaymentMethod } from '../../../types/wallet';
+import { formatNaira, TOP_UP_PRESETS } from '../../../utils/wallet';
+import type { PaymentMethod } from '../../../types/wallet';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'AddFunds'>;
 type Step = 'amount' | 'method' | 'processing';
 
-const NG_METHODS: { id: PaymentMethod; name: string; sub: string }[] = [
-  { id: 'paystack_card', name: 'Paystack Card', sub: 'Instant · Cards accepted' },
-  { id: 'paystack_bank', name: 'Bank Transfer (Paystack)', sub: 'Instant · Pay from any bank' },
-  { id: 'paystack_ussd', name: 'USSD', sub: 'Dial a code to pay' },
-  { id: 'bank_transfer', name: 'Direct Bank Transfer', sub: '10–30 min · Manual' },
-];
-const INTL_METHODS: { id: PaymentMethod; name: string; sub: string }[] = [
-  { id: 'stripe_card', name: 'Card (Stripe)', sub: 'Instant · Visa, Mastercard, Amex' },
-  { id: 'bank_transfer', name: 'Bank Transfer', sub: '1–2 days · Manual' },
+const METHODS: { id: PaymentMethod; name: string; sub: string }[] = [
+  { id: 'paystack_card', name: 'Paystack Card', sub: 'Instant · Debit/Credit cards' },
+  {
+    id: 'paystack_bank',
+    name: 'Paystack Bank Transfer',
+    sub: 'Transfer from your bank',
+  },
+  { id: 'paystack_ussd', name: 'USSD', sub: 'Dial a code · No internet needed' },
+  { id: 'bank_transfer', name: 'Direct Bank Transfer', sub: 'Manual · 1-3 hours' },
 ];
 
 export function AddFundsScreen({ navigation, route }: Props) {
-  const { state, topUp } = useWallet();
-  const currency: Currency =
-    state.status === 'success' ? state.data.currency : 'NGN';
-  const country = state.status === 'success' ? state.data.country : 'NG';
+  const { topUp } = useWallet();
 
-  const presets = topUpPresets(currency);
+  const presets = TOP_UP_PRESETS;
   const [step, setStep] = useState<Step>('amount');
   const [amount, setAmount] = useState<number | null>(
     route.params?.preselectedAmount ?? null,
@@ -59,7 +51,7 @@ export function AddFundsScreen({ navigation, route }: Props) {
   const [done, setDone] = useState(false);
   const checkScale = useRef(new Animated.Value(0)).current;
 
-  const methods = country === 'NG' ? NG_METHODS : INTL_METHODS;
+  const methods = METHODS;
 
   const effectiveAmount =
     custom.trim().length > 0 ? Number(custom) || 0 : amount ?? 0;
@@ -80,8 +72,8 @@ export function AddFundsScreen({ navigation, route }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
-  const onSelectPreset = (ft: number) => {
-    setAmount(ft);
+  const onSelectPreset = (value: number) => {
+    setAmount(value);
     setCustom('');
   };
 
@@ -106,7 +98,7 @@ export function AddFundsScreen({ navigation, route }: Props) {
             </Animated.View>
             <Text style={styles.successTitle}>Payment Successful!</Text>
             <Text style={styles.muted}>
-              +{formatFt(effectiveAmount)} added to your wallet
+              +{formatNaira(effectiveAmount)} added to your wallet
             </Text>
             <View style={styles.doneBtnWrap}>
               <Button
@@ -139,7 +131,7 @@ export function AddFundsScreen({ navigation, route }: Props) {
           <ChevronLeftIcon size={24} color={colors.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.title}>
-          {step === 'amount' ? 'Add Tokens' : 'Payment Method'}
+          {step === 'amount' ? 'Add Money' : 'Payment Method'}
         </Text>
         <View style={styles.backSpacer} />
       </View>
@@ -149,42 +141,37 @@ export function AddFundsScreen({ navigation, route }: Props) {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.rateBar}>
-            <Text style={styles.rateText}>
-              1 Token = {formatReal(ftToBuyReal(1, currency), currency)} · Rate
-              locked for 15 min
-            </Text>
-          </View>
-
           <View style={styles.grid}>
             {presets.map((opt) => (
               <TopUpCard
-                key={opt.ftAmount}
+                key={opt.amount}
                 option={opt}
-                selected={!custom && amount === opt.ftAmount}
-                onPress={() => onSelectPreset(opt.ftAmount)}
+                selected={!custom && amount === opt.amount}
+                onPress={() => onSelectPreset(opt.amount)}
                 style={styles.gridCard}
               />
             ))}
           </View>
 
-          <Text style={styles.label}>Enter custom amount (Tokens)</Text>
-          <TextInput
-            style={styles.input}
-            value={custom}
-            onChangeText={(t) => {
-              setCustom(t.replace(/[^0-9]/g, ''));
-              setAmount(null);
-            }}
-            placeholder="e.g. 3000"
-            placeholderTextColor={colors.textMuted}
-            keyboardType="numeric"
-            testID="custom-amount-input"
-          />
+          <Text style={styles.label}>Enter amount in Naira</Text>
+          <View style={styles.inputRow}>
+            <Text style={styles.nairaPrefix}>₦</Text>
+            <TextInput
+              style={styles.inputField}
+              value={custom}
+              onChangeText={(t) => {
+                setCustom(t.replace(/[^0-9]/g, ''));
+                setAmount(null);
+              }}
+              placeholder="e.g. 3000"
+              placeholderTextColor={colors.textMuted}
+              keyboardType="numeric"
+              testID="custom-amount-input"
+            />
+          </View>
           {effectiveAmount > 0 && (
             <Text style={styles.equiv} testID="custom-amount-equiv">
-              You pay{' '}
-              {formatReal(ftToBuyReal(effectiveAmount, currency), currency)}
+              You pay {formatNaira(effectiveAmount)}
             </Text>
           )}
 
@@ -202,8 +189,7 @@ export function AddFundsScreen({ navigation, route }: Props) {
       {step === 'method' && (
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.payHeader}>
-            Pay {formatFt(effectiveAmount)} (
-            {formatReal(ftToBuyReal(effectiveAmount, currency), currency)})
+            Pay {formatNaira(effectiveAmount)}
           </Text>
 
           <View style={styles.methodList} testID="payment-method-list">
@@ -261,14 +247,6 @@ const styles = StyleSheet.create({
   backSpacer: { width: 24 },
   title: { color: colors.textPrimary, fontSize: 18, fontWeight: '700' },
   content: { paddingHorizontal: 20, paddingBottom: spacing.xl },
-  rateBar: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.sm,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.lg,
-  },
-  rateText: { color: colors.textMuted, fontSize: 12 },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -282,14 +260,25 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
   },
-  input: {
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.inputBg,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+  },
+  nairaPrefix: {
+    color: colors.textSecondary,
+    fontSize: 16,
+    fontWeight: '700',
+    marginRight: spacing.sm,
+  },
+  inputField: {
+    flex: 1,
     color: colors.textPrimary,
     fontSize: 16,
-    paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
   },
   equiv: {

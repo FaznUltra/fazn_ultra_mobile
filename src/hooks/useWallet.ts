@@ -5,34 +5,23 @@ import type {
   PaymentMethod,
 } from '../types/wallet';
 import type { BankDetails, WithdrawalMethod } from '../types/wallet';
-import { ftToBuyReal, ftToSellReal } from '../utils/wallet';
 
 /**
  * Mock data — shape defines the backend contract.
  * Backend: GET /api/v1/wallet → WalletData
- * Nigerian user.
+ * Nigerian user. All amounts in Naira (₦).
  */
 const MOCK_WALLET: WalletData = {
-  ftBalance: 12450,
-  pendingFt: 200,
+  balance: 12500,
+  pendingAmount: 200,
   totalWon: 45200,
   totalSpent: 32750,
-  currency: 'NGN',
-  country: 'NG',
-  availablePaymentMethods: [
-    'paystack_card',
-    'paystack_bank',
-    'paystack_ussd',
-    'bank_transfer',
-  ],
   transactions: [
     {
       id: 'tx1',
       type: 'top_up',
       status: 'completed',
-      ftAmount: 2500,
-      realAmount: 37500,
-      currency: 'NGN',
+      amount: 2500,
       description: 'Wallet top-up',
       reference: 'TP-9F2A41',
       createdAt: '2026-05-15T09:12:00Z',
@@ -42,9 +31,7 @@ const MOCK_WALLET: WalletData = {
       id: 'tx2',
       type: 'challenge_win',
       status: 'completed',
-      ftAmount: 5000,
-      realAmount: 67500,
-      currency: 'NGN',
+      amount: 5000,
       description: 'Won challenge vs sniperghost',
       reference: 'CW-77B210',
       createdAt: '2026-05-15T03:40:00Z',
@@ -57,9 +44,7 @@ const MOCK_WALLET: WalletData = {
       id: 'tx3',
       type: 'challenge_entry',
       status: 'completed',
-      ftAmount: 1000,
-      realAmount: 15000,
-      currency: 'NGN',
+      amount: 1000,
       description: 'Entry — COD Warzone Invitational',
       reference: 'CE-1180AA',
       createdAt: '2026-05-14T20:05:00Z',
@@ -72,9 +57,7 @@ const MOCK_WALLET: WalletData = {
       id: 'tx4',
       type: 'gift_received',
       status: 'completed',
-      ftAmount: 500,
-      realAmount: 7500,
-      currency: 'NGN',
+      amount: 500,
       description: 'Gift from techboss_uk',
       reference: 'GF-44C901',
       createdAt: '2026-05-14T15:22:00Z',
@@ -84,9 +67,7 @@ const MOCK_WALLET: WalletData = {
       id: 'tx5',
       type: 'withdrawal',
       status: 'pending',
-      ftAmount: 200,
-      realAmount: 2700,
-      currency: 'NGN',
+      amount: 200,
       description: 'Withdrawal to GTBank',
       reference: 'WD-22DEF0',
       createdAt: '2026-05-14T11:00:00Z',
@@ -96,9 +77,7 @@ const MOCK_WALLET: WalletData = {
       id: 'tx6',
       type: 'platform_bonus',
       status: 'completed',
-      ftAmount: 1000,
-      realAmount: 0,
-      currency: 'NGN',
+      amount: 1000,
       description: 'Welcome bonus',
       reference: 'PB-000001',
       createdAt: '2026-05-13T08:00:00Z',
@@ -107,9 +86,7 @@ const MOCK_WALLET: WalletData = {
       id: 'tx7',
       type: 'challenge_entry',
       status: 'completed',
-      ftAmount: 750,
-      realAmount: 11250,
-      currency: 'NGN',
+      amount: 750,
       description: 'Entry — NBA Slam Dunk League',
       reference: 'CE-9930CC',
       createdAt: '2026-05-12T19:30:00Z',
@@ -119,9 +96,7 @@ const MOCK_WALLET: WalletData = {
       id: 'tx8',
       type: 'challenge_win',
       status: 'completed',
-      ftAmount: 3500,
-      realAmount: 47250,
-      currency: 'NGN',
+      amount: 3500,
       description: 'Won challenge vs j_buckets',
       reference: 'CW-5521AB',
       createdAt: '2026-05-12T21:10:00Z',
@@ -131,9 +106,7 @@ const MOCK_WALLET: WalletData = {
       id: 'tx9',
       type: 'gift_sent',
       status: 'completed',
-      ftAmount: 300,
-      realAmount: 4500,
-      currency: 'NGN',
+      amount: 300,
       description: 'Gift to nova_player',
       reference: 'GF-71A0FF',
       createdAt: '2026-05-11T13:45:00Z',
@@ -143,9 +116,7 @@ const MOCK_WALLET: WalletData = {
       id: 'tx10',
       type: 'top_up',
       status: 'failed',
-      ftAmount: 5000,
-      realAmount: 75000,
-      currency: 'NGN',
+      amount: 5000,
       description: 'Wallet top-up failed',
       reference: 'TP-FA1L00',
       createdAt: '2026-05-10T17:20:00Z',
@@ -155,9 +126,7 @@ const MOCK_WALLET: WalletData = {
       id: 'tx11',
       type: 'top_up',
       status: 'completed',
-      ftAmount: 10000,
-      realAmount: 150000,
-      currency: 'NGN',
+      amount: 10000,
       description: 'Wallet top-up',
       reference: 'TP-AA9921',
       createdAt: '2026-05-08T10:05:00Z',
@@ -167,9 +136,7 @@ const MOCK_WALLET: WalletData = {
       id: 'tx12',
       type: 'challenge_entry',
       status: 'reversed',
-      ftAmount: 500,
-      realAmount: 7500,
-      currency: 'NGN',
+      amount: 500,
       description: 'Entry refunded — cancelled match',
       reference: 'CE-RV0011',
       createdAt: '2026-05-07T22:00:00Z',
@@ -179,9 +146,7 @@ const MOCK_WALLET: WalletData = {
       id: 'tx13',
       type: 'challenge_win',
       status: 'completed',
-      ftAmount: 2000,
-      realAmount: 27000,
-      currency: 'NGN',
+      amount: 2000,
       description: 'Won challenge vs kingjames23',
       reference: 'CW-3340DE',
       createdAt: '2026-05-06T18:15:00Z',
@@ -238,16 +203,14 @@ export function useWallet() {
   }, []);
 
   const topUp = useCallback(
-    async (ftAmount: number, paymentMethod: PaymentMethod) => {
+    async (amount: number, paymentMethod: PaymentMethod) => {
       setState((prev) => {
         if (prev.status !== 'success') return prev;
         const tx: Transaction = {
           id: makeRef('tx'),
           type: 'top_up',
           status: 'pending',
-          ftAmount,
-          realAmount: ftToBuyReal(ftAmount, prev.data.currency),
-          currency: prev.data.currency,
+          amount,
           description: 'Wallet top-up',
           reference: makeRef('TP'),
           createdAt: new Date().toISOString(),
@@ -257,7 +220,7 @@ export function useWallet() {
           status: 'success',
           data: {
             ...prev.data,
-            pendingFt: prev.data.pendingFt + ftAmount,
+            pendingAmount: prev.data.pendingAmount + amount,
             transactions: [tx, ...prev.data.transactions],
           },
         };
@@ -269,7 +232,7 @@ export function useWallet() {
 
   const withdraw = useCallback(
     async (
-      ftAmount: number,
+      amount: number,
       method: WithdrawalMethod,
       bankDetails: BankDetails,
     ) => {
@@ -279,9 +242,7 @@ export function useWallet() {
           id: makeRef('tx'),
           type: 'withdrawal',
           status: 'pending',
-          ftAmount,
-          realAmount: ftToSellReal(ftAmount, prev.data.currency),
-          currency: prev.data.currency,
+          amount,
           description: `Withdrawal to ${bankDetails.bankName}`,
           reference: makeRef('WD'),
           createdAt: new Date().toISOString(),
@@ -294,7 +255,7 @@ export function useWallet() {
           status: 'success',
           data: {
             ...prev.data,
-            ftBalance: prev.data.ftBalance - ftAmount,
+            balance: prev.data.balance - amount,
             transactions: [tx, ...prev.data.transactions],
           },
         };
@@ -306,35 +267,5 @@ export function useWallet() {
     [],
   );
 
-  const sendGift = useCallback(
-    async (recipientUserId: string, ftAmount: number) => {
-      setState((prev) => {
-        if (prev.status !== 'success') return prev;
-        const tx: Transaction = {
-          id: makeRef('tx'),
-          type: 'gift_sent',
-          status: 'completed',
-          ftAmount,
-          realAmount: ftToSellReal(ftAmount, prev.data.currency),
-          currency: prev.data.currency,
-          description: `Gift to ${recipientUserId}`,
-          reference: makeRef('GF'),
-          createdAt: new Date().toISOString(),
-          metadata: { sender: recipientUserId },
-        };
-        return {
-          status: 'success',
-          data: {
-            ...prev.data,
-            ftBalance: prev.data.ftBalance - ftAmount,
-            transactions: [tx, ...prev.data.transactions],
-          },
-        };
-      });
-      await new Promise((r) => setTimeout(r, 400));
-    },
-    [],
-  );
-
-  return { state, topUp, withdraw, sendGift, refreshWallet };
+  return { state, topUp, withdraw, refreshWallet };
 }

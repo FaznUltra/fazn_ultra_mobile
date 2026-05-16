@@ -22,9 +22,7 @@ const base: Transaction = {
   id: 'tx1',
   type: 'top_up',
   status: 'completed',
-  ftAmount: 2500,
-  realAmount: 37500,
-  currency: 'NGN',
+  amount: 2500,
   description: 'Wallet top-up',
   reference: 'TP-9F2A41',
   createdAt: '2026-05-15T09:12:00Z',
@@ -36,7 +34,7 @@ describe('TransactionRow', () => {
       <TransactionRow transaction={base} />,
     );
     expect(getByTestId('transaction-row-tx1')).toBeTruthy();
-    expect(getByText('+2,500 Tokens')).toBeTruthy();
+    expect(getByText('+₦2,500')).toBeTruthy();
   });
 
   it('renders outgoing with red amount (−)', () => {
@@ -45,7 +43,7 @@ describe('TransactionRow', () => {
         transaction={{ ...base, id: 'tx2', type: 'withdrawal' }}
       />,
     );
-    expect(getByText('−2,500 Tokens')).toBeTruthy();
+    expect(getByText('−₦2,500')).toBeTruthy();
   });
 
   it('renders pending status badge', () => {

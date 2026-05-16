@@ -31,13 +31,10 @@ const mockNavigation = { navigate: jest.fn(), goBack: jest.fn() };
 const mockWithdraw = jest.fn();
 
 const DATA: WalletData = {
-  ftBalance: 12450,
-  pendingFt: 0,
+  balance: 12500,
+  pendingAmount: 0,
   totalWon: 0,
   totalSpent: 0,
-  currency: 'NGN',
-  country: 'NG',
-  availablePaymentMethods: ['bank_transfer'],
   transactions: [],
 };
 
@@ -68,13 +65,13 @@ describe('WithdrawScreen', () => {
   it('renders with available balance', () => {
     const { getByTestId, getByText } = renderScreen();
     expect(getByTestId('withdraw-screen')).toBeTruthy();
-    expect(getByText('Available: 12,450 Tokens')).toBeTruthy();
+    expect(getByText('Available: ₦12,500')).toBeTruthy();
   });
 
   it('quick pick 50% fills correct amount', () => {
     const { getByTestId } = renderScreen();
     fireEvent.press(getByTestId('withdraw-quick-50'));
-    expect(getByTestId('withdraw-amount-input').props.value).toBe('6225');
+    expect(getByTestId('withdraw-amount-input').props.value).toBe('6250');
   });
 
   it('continue disabled below min 1000 Tokens', () => {

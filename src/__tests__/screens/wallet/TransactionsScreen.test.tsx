@@ -31,21 +31,16 @@ const mockNavigation = { navigate: jest.fn(), goBack: jest.fn() };
 const mockRefresh = jest.fn().mockResolvedValue(undefined);
 
 const mockData: WalletData = {
-  ftBalance: 12450,
-  pendingFt: 0,
+  balance: 12500,
+  pendingAmount: 0,
   totalWon: 0,
   totalSpent: 0,
-  currency: 'NGN',
-  country: 'NG',
-  availablePaymentMethods: ['paystack_card'],
   transactions: [
     {
       id: 'tx1',
       type: 'top_up',
       status: 'completed',
-      ftAmount: 2500,
-      realAmount: 37500,
-      currency: 'NGN',
+      amount: 2500,
       description: 'Wallet top-up',
       reference: 'TP-1',
       createdAt: new Date().toISOString(),
@@ -54,9 +49,7 @@ const mockData: WalletData = {
       id: 'tx2',
       type: 'withdrawal',
       status: 'pending',
-      ftAmount: 1000,
-      realAmount: 13500,
-      currency: 'NGN',
+      amount: 1000,
       description: 'Withdrawal to GTBank',
       reference: 'WD-1',
       createdAt: new Date(Date.now() - 86400000).toISOString(),

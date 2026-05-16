@@ -30,21 +30,16 @@ jest.mock('react-native-svg', () => {
 const mockNavigation = { navigate: jest.fn(), goBack: jest.fn() };
 
 const DATA: WalletData = {
-  ftBalance: 12450,
-  pendingFt: 200,
+  balance: 12500,
+  pendingAmount: 200,
   totalWon: 45200,
   totalSpent: 32750,
-  currency: 'NGN',
-  country: 'NG',
-  availablePaymentMethods: ['paystack_card'],
   transactions: [
     {
       id: 'tx1',
       type: 'top_up',
       status: 'completed',
-      ftAmount: 2500,
-      realAmount: 37500,
-      currency: 'NGN',
+      amount: 2500,
       description: 'Wallet top-up',
       reference: 'TP-1',
       createdAt: '2026-05-15T09:12:00Z',
@@ -78,7 +73,7 @@ describe('WalletScreen', () => {
   it('renders balance and pending amount', () => {
     const { getByTestId } = renderScreen();
     expect(getByTestId('wallet-screen')).toBeTruthy();
-    expect(getByTestId('wallet-balance').props.children).toContain('12,450');
+    expect(getByTestId('wallet-balance').props.children).toContain('12,500');
     expect(getByTestId('wallet-pending')).toBeTruthy();
   });
 

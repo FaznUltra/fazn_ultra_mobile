@@ -2,7 +2,7 @@ import React from 'react';
 import { TouchableOpacity, Text, View, StyleSheet } from 'react-native';
 import { colors, spacing, radius } from '../../theme';
 import type { TopUpOption } from '../../types/wallet';
-import { formatFt, formatReal } from '../../utils/wallet';
+import { formatNaira } from '../../utils/wallet';
 
 interface Props {
   option: TopUpOption;
@@ -17,10 +17,10 @@ export function TopUpCard({ option, selected = false, onPress, style }: Props) {
       activeOpacity={0.85}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`Top up ${formatFt(option.ftAmount)}`}
+      accessibilityLabel={`Top up ${option.label}`}
       accessibilityState={{ selected }}
       style={[styles.card, selected && styles.cardSelected, style]}
-      testID={`topup-card-${option.ftAmount}`}
+      testID={`topup-card-${option.amount}`}
     >
       {option.popular && (
         <View style={styles.popularBadge}>
@@ -28,13 +28,10 @@ export function TopUpCard({ option, selected = false, onPress, style }: Props) {
         </View>
       )}
 
-      <Text style={styles.ft}>{formatFt(option.ftAmount)}</Text>
-      <Text style={styles.real}>
-        {formatReal(option.realAmount, option.currency)}
-      </Text>
+      <Text style={styles.ft}>{option.label}</Text>
 
       {option.bonus ? (
-        <Text style={styles.bonus}>+{option.bonus} FREE</Text>
+        <Text style={styles.bonus}>+{formatNaira(option.bonus)} FREE</Text>
       ) : null}
     </TouchableOpacity>
   );
@@ -67,7 +64,6 @@ const styles = StyleSheet.create({
   },
   popularText: { color: '#fff', fontSize: 9, fontWeight: '700' },
   ft: { color: colors.textPrimary, fontSize: 18, fontWeight: '800' },
-  real: { color: colors.textMuted, fontSize: 13, marginTop: 2 },
   bonus: {
     color: colors.success,
     fontSize: 11,

@@ -31,13 +31,10 @@ const mockNavigation = { navigate: jest.fn(), goBack: jest.fn() };
 const mockTopUp = jest.fn();
 
 const DATA: WalletData = {
-  ftBalance: 12450,
-  pendingFt: 0,
+  balance: 12500,
+  pendingAmount: 0,
   totalWon: 0,
   totalSpent: 0,
-  currency: 'NGN',
-  country: 'NG',
-  availablePaymentMethods: ['paystack_card'],
   transactions: [],
 };
 
@@ -65,7 +62,7 @@ describe('AddFundsScreen', () => {
   it('renders step 1 with preset amounts', () => {
     const { getByTestId } = renderScreen();
     expect(getByTestId('add-funds-screen')).toBeTruthy();
-    expect(getByTestId('topup-card-500')).toBeTruthy();
+    expect(getByTestId('topup-card-1000')).toBeTruthy();
     expect(getByTestId('topup-card-10000')).toBeTruthy();
   });
 
