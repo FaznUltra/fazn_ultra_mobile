@@ -27,21 +27,6 @@ jest.mock('react-native-svg', () => {
   };
 });
 
-jest.mock('@react-native-community/datetimepicker', () => {
-  const React = require('react');
-  const { View } = require('react-native');
-  return {
-    __esModule: true,
-    default: ({ onChange, testID, value }: { onChange: (e: object, d: Date) => void; testID?: string; value: Date }) =>
-      React.createElement(View, {
-        testID,
-        onStartShouldSetResponder: () => true,
-        onChange: () => onChange({}, new Date(Date.now() + 10 * 3_600_000)),
-        value,
-      }),
-  };
-});
-
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({ navigate: mockNavigate, goBack: mockGoBack }),
   useRoute: () => ({

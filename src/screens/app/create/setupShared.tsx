@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,8 @@ import {
   ScrollView,
   StyleSheet,
   Modal,
-  Platform,
 } from 'react-native';
-import DateTimePicker, {
-  type DateTimePickerEvent,
-} from '@react-native-community/datetimepicker';
+import { WheelPicker } from '../../../components/ui/WheelPicker';
 import { colors, spacing, radius } from '../../../theme';
 import { formatNaira } from '../../../utils/wallet';
 import type { OpponentType } from '../../../types/challenge';
@@ -187,6 +184,15 @@ export function formatDateTime(d: Date): string {
   });
 }
 
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const HOURS = Array.from({ length: 12 }, (_, i) => String(i + 1));
+const MINUTES = ['00','05','10','15','20','25','30','35','40','45','50','55'];
+const AMPM = ['AM', 'PM'];
+
+function daysInMonth(year: number, month: number) {
+  return new Date(year, month + 1, 0).getDate();
+}
+
 export function PlatformDatePicker({
   visible,
   value,
@@ -202,31 +208,33 @@ export function PlatformDatePicker({
   onClose: () => void;
   testID: string;
 }) {
-  const [tempDate, setTempDate] = useState<Date>(value);
+  const now = minimumDate;
+  const [monthIdx, setMonthIdx] = useState(value.getMonth());
+  const [year, setYear] = useState(value.getFullYear());
+  const [day, setDay] = useState(value.getDate() - 1);
+  const [hourIdx, setHourIdx] = useState(() => {
+    const h = value.getHours() % 12;
+    return h === 0 ? 11 : h - 1;
+  });
+  const [minuteIdx, setMinuteIdx] = useState(Math.floor(value.getMinutes() / 5));
+  const [ampmIdx, setAmpmIdx] = useState(value.getHours() >= 12 ? 1 : 0);
 
-  const handleChange = (_event: DateTimePickerEvent, selected?: Date) => {
-    if (!selected) return;
-    if (Platform.OS === 'android') {
-      onChange(selected);
-      onClose();
-    } else {
-      setTempDate(selected);
-    }
+  const years = useMemo(() => {
+    const base = now.getFullYear();
+    return Array.from({ length: 3 }, (_, i) => String(base + i));
+  }, [now]);
+
+  const totalDays = daysInMonth(year, monthIdx);
+  const days = Array.from({ length: totalDays }, (_, i) => String(i + 1).padStart(2, '0'));
+
+  const onConfirm = () => {
+    const h24 = ampmIdx === 1
+      ? (hourIdx + 1 === 12 ? 12 : hourIdx + 13)
+      : (hourIdx + 1 === 12 ? 0 : hourIdx + 1);
+    const d = new Date(year, monthIdx, day + 1, h24, Number(MINUTES[minuteIdx]));
+    onChange(d);
+    onClose();
   };
-
-  if (Platform.OS === 'android') {
-    if (!visible) return null;
-    return (
-      <DateTimePicker
-        value={value}
-        mode="datetime"
-        minimumDate={minimumDate}
-        display="default"
-        onChange={handleChange}
-        testID={testID}
-      />
-    );
-  }
 
   return (
     <Modal transparent animationType="slide" visible={visible} testID={testID}>
@@ -248,8 +256,9 @@ export function PlatformDatePicker({
             >
               <Text style={styles.iosCancelText}>Cancel</Text>
             </TouchableOpacity>
+            <Text style={styles.iosSheetTitle}>Select date & time</Text>
             <TouchableOpacity
-              onPress={() => { onChange(tempDate); onClose(); }}
+              onPress={onConfirm}
               accessibilityRole="button"
               accessibilityLabel="Done"
               testID={`${testID}-done`}
@@ -257,15 +266,52 @@ export function PlatformDatePicker({
               <Text style={styles.iosDoneText}>Done</Text>
             </TouchableOpacity>
           </View>
-          <DateTimePicker
-            value={tempDate}
-            mode="datetime"
-            minimumDate={minimumDate}
-            display="spinner"
-            onChange={handleChange}
-            themeVariant="dark"
-            testID={`${testID}-picker`}
-          />
+
+          <View style={styles.wheelRow}>
+            <WheelPicker
+              items={MONTHS}
+              selectedIndex={monthIdx}
+              onIndexChange={setMonthIdx}
+              width={68}
+              testID={`${testID}-month`}
+            />
+            <WheelPicker
+              items={days}
+              selectedIndex={Math.min(day, totalDays - 1)}
+              onIndexChange={setDay}
+              width={52}
+              testID={`${testID}-day`}
+            />
+            <WheelPicker
+              items={years}
+              selectedIndex={years.indexOf(String(year))}
+              onIndexChange={(i) => setYear(Number(years[i]))}
+              width={68}
+              testID={`${testID}-year`}
+            />
+            <View style={styles.wheelDivider} />
+            <WheelPicker
+              items={HOURS}
+              selectedIndex={hourIdx}
+              onIndexChange={setHourIdx}
+              width={44}
+              testID={`${testID}-hour`}
+            />
+            <WheelPicker
+              items={MINUTES}
+              selectedIndex={minuteIdx}
+              onIndexChange={setMinuteIdx}
+              width={44}
+              testID={`${testID}-minute`}
+            />
+            <WheelPicker
+              items={AMPM}
+              selectedIndex={ampmIdx}
+              onIndexChange={setAmpmIdx}
+              width={48}
+              testID={`${testID}-ampm`}
+            />
+          </View>
         </View>
       </View>
     </Modal>
@@ -543,9 +589,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
+  iosSheetTitle: { color: colors.textSecondary, fontSize: 14, fontWeight: '600' },
   iosCancelText: { color: colors.textMuted, fontSize: 16 },
   iosDoneText: { color: colors.primaryLight, fontSize: 16, fontWeight: '700' },
+  wheelRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    gap: 4,
+  },
+  wheelDivider: {
+    width: 16,
+  },
   drawerBackdrop: { flex: 1, justifyContent: 'flex-end' },
   drawerDismiss: { flex: 1, backgroundColor: '#000000aa' },
   drawerSheet: {
