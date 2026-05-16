@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ProfileStackParamList } from '../../../navigation/types';
@@ -13,6 +14,7 @@ import { ScreenContainer } from '../../../components/ui/ScreenContainer';
 import { Avatar } from '../../../components/profile/Avatar';
 import { ChevronLeftIcon, CloseIcon } from '../../../components/profile/ProfileIcons';
 import { useAuthStore } from '../../../store/auth.store';
+import { profileApi, ApiError } from '../../../lib/api';
 import { colors, spacing, radius } from '../../../theme';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'EditProfile'>;
@@ -90,6 +92,7 @@ export function EditProfileScreen({ navigation }: Props) {
   const [username, setUsername] = useState(initial.username);
   const [bio, setBio] = useState(initial.bio);
   const [tags, setTags] = useState<string[]>(initial.tags);
+  const [saving, setSaving] = useState(false);
 
   const dirty =
     firstName !== initial.firstName ||
@@ -102,14 +105,28 @@ export function EditProfileScreen({ navigation }: Props) {
   const removeTag = (tag: string) =>
     setTags((prev) => prev.filter((t) => t !== tag));
 
-  const onSave = () => {
+  const onSave = async () => {
     if (!firstName.trim() || !lastName.trim()) {
       Alert.alert('Missing info', 'First and last name are required.');
       return;
     }
-    Alert.alert('Saved', 'Your profile has been updated.', [
-      { text: 'OK', onPress: () => navigation.goBack() },
-    ]);
+    setSaving(true);
+    try {
+      await profileApi.updateProfile({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        username: username.trim(),
+        bio: bio.trim(),
+        tags,
+      });
+      navigation.goBack();
+    } catch (err) {
+      const message =
+        err instanceof ApiError ? err.message : 'Failed to save profile. Please try again.';
+      Alert.alert('Error', message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -127,14 +144,18 @@ export function EditProfileScreen({ navigation }: Props) {
         <Text style={styles.title}>Edit Profile</Text>
         <TouchableOpacity
           onPress={onSave}
-          disabled={!dirty}
+          disabled={!dirty || saving}
           testID="edit-save-btn"
           accessibilityRole="button"
           accessibilityLabel="Save"
-          accessibilityState={{ disabled: !dirty }}
+          accessibilityState={{ disabled: !dirty || saving }}
           hitSlop={10}
         >
-          <Text style={[styles.save, !dirty && styles.saveDisabled]}>Save</Text>
+          {saving ? (
+            <ActivityIndicator size="small" color={colors.primaryLight} />
+          ) : (
+            <Text style={[styles.save, (!dirty || saving) && styles.saveDisabled]}>Save</Text>
+          )}
         </TouchableOpacity>
       </View>
 

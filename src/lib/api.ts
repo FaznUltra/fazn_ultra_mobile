@@ -254,4 +254,50 @@ export const authApi = {
 export const oauthUrl = (provider: 'google' | 'apple'): string =>
   `${API_BASE}${API_PREFIX}/auth/oauth/${provider}`;
 
+/* ----------------------------- Profile endpoints ------------------------- */
+
+import type { ProfileData, PrivacySettings, StreamingChannel } from '../types/profile';
+
+export interface UpdateProfilePayload {
+  firstName?: string;
+  lastName?: string;
+  username?: string;
+  bio?: string;
+  avatarUrl?: string;
+  tags?: string[];
+}
+
+export interface UpdatePrivacyPayload {
+  showOnlineStatus?: boolean;
+  showStats?: boolean;
+  showRecentResults?: boolean;
+  allowChallengesFrom?: 'everyone' | 'friends' | 'nobody';
+}
+
+export const profileApi = {
+  getProfile(): Promise<ProfileData> {
+    return rawRequest('/profile', { auth: true });
+  },
+
+  updateProfile(payload: UpdateProfilePayload): Promise<{ user: Record<string, unknown> }> {
+    return rawRequest('/profile', { method: 'PATCH', auth: true, body: payload });
+  },
+
+  getPrivacy(): Promise<PrivacySettings> {
+    return rawRequest('/profile/privacy', { auth: true });
+  },
+
+  updatePrivacy(payload: UpdatePrivacyPayload): Promise<PrivacySettings> {
+    return rawRequest('/profile/privacy', { method: 'PATCH', auth: true, body: payload });
+  },
+
+  getStreamingChannels(): Promise<{ data: StreamingChannel[] }> {
+    return rawRequest('/profile/streaming', { auth: true });
+  },
+
+  disconnectChannel(provider: 'youtube' | 'twitch'): Promise<MessageResponse> {
+    return rawRequest(`/profile/streaming/${provider}`, { method: 'DELETE', auth: true });
+  },
+};
+
 export { rawRequest as __rawRequestForTests };

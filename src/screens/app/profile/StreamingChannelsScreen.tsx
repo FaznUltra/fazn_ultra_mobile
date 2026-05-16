@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ProfileStackParamList } from '../../../navigation/types';
 import { ScreenContainer } from '../../../components/ui/ScreenContainer';
 import { SectionHeader } from '../../../components/ui/SectionHeader';
+import { profileApi, ApiError } from '../../../lib/api';
 import { colors, spacing, radius } from '../../../theme';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'StreamingChannels'>;
@@ -137,6 +138,22 @@ export function StreamingChannelsScreen({ navigation }: Props) {
   const [youtubeAccount, setYoutubeAccount] = useState<string | null>(null);
   const [twitchAccount, setTwitchAccount] = useState<string | null>(null);
 
+  const loadChannels = useCallback(async () => {
+    try {
+      const { data } = await profileApi.getStreamingChannels();
+      for (const ch of data) {
+        if (ch.provider === 'youtube') setYoutubeAccount(ch.channelName);
+        if (ch.provider === 'twitch') setTwitchAccount(ch.channelName);
+      }
+    } catch {
+      // keep defaults on error
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadChannels();
+  }, [loadChannels]);
+
   const connectYouTube = () =>
     Alert.alert(
       'Connect YouTube',
@@ -157,7 +174,15 @@ export function StreamingChannelsScreen({ navigation }: Props) {
       {
         text: 'Disconnect',
         style: 'destructive',
-        onPress: () => setYoutubeAccount(null),
+        onPress: async () => {
+          try {
+            await profileApi.disconnectChannel('youtube');
+            setYoutubeAccount(null);
+          } catch (err) {
+            const msg = err instanceof ApiError ? err.message : 'Failed to disconnect.';
+            Alert.alert('Error', msg);
+          }
+        },
       },
     ]);
 
@@ -167,7 +192,15 @@ export function StreamingChannelsScreen({ navigation }: Props) {
       {
         text: 'Disconnect',
         style: 'destructive',
-        onPress: () => setTwitchAccount(null),
+        onPress: async () => {
+          try {
+            await profileApi.disconnectChannel('twitch');
+            setTwitchAccount(null);
+          } catch (err) {
+            const msg = err instanceof ApiError ? err.message : 'Failed to disconnect.';
+            Alert.alert('Error', msg);
+          }
+        },
       },
     ]);
 

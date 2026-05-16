@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import { PrivacyScreen } from '../../../screens/app/profile/PrivacyScreen';
 
@@ -23,26 +23,51 @@ jest.mock('react-native-svg', () => {
   };
 });
 
+const mockGetPrivacy = jest.fn().mockResolvedValue({
+  showOnlineStatus: true,
+  showStats: true,
+  showRecentResults: false,
+  allowChallengesFrom: 'everyone',
+});
+
+const mockUpdatePrivacy = jest.fn().mockResolvedValue({});
+
+jest.mock('../../../lib/api', () => ({
+  profileApi: {
+    getPrivacy: () => mockGetPrivacy(),
+    updatePrivacy: (...args: unknown[]) => mockUpdatePrivacy(...args),
+  },
+  ApiError: class ApiError extends Error {
+    code: string;
+    status: number;
+    constructor(code: string, message: string, status: number) {
+      super(message);
+      this.code = code;
+      this.status = status;
+    }
+  },
+}));
+
 function makeNav() {
   return { goBack: jest.fn(), navigate: jest.fn() };
 }
 
-function renderScreen(nav = makeNav()) {
+async function renderScreen(nav = makeNav()) {
   const utils = render(
     <PrivacyScreen
       navigation={nav as never}
       route={{ key: 'k', name: 'Privacy' } as never}
     />,
   );
+  await waitFor(() => utils.getByTestId('privacy-screen'));
   return { ...utils, nav };
 }
 
 describe('PrivacyScreen', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('renders all toggle rows', () => {
-    const { getByTestId } = renderScreen();
-    expect(getByTestId('privacy-screen')).toBeTruthy();
+  it('renders all toggle rows', async () => {
+    const { getByTestId } = await renderScreen();
     [
       'public-profile',
       'online-status',
@@ -55,23 +80,22 @@ describe('PrivacyScreen', () => {
     ].forEach((k) => expect(getByTestId(`toggle-${k}`)).toBeTruthy());
   });
 
-  it('toggling a switch changes its value', () => {
-    const { getByTestId } = renderScreen();
+  it('toggling a switch changes its value', async () => {
+    const { getByTestId } = await renderScreen();
     const sw = getByTestId('toggle-match-history');
-    expect(sw.props.value).toBe(false);
-    fireEvent(sw, 'valueChange', true);
-    expect(getByTestId('toggle-match-history').props.value).toBe(true);
+    const initialValue = sw.props.value;
+    fireEvent(sw, 'valueChange', !initialValue);
+    expect(getByTestId('toggle-match-history').props.value).toBe(!initialValue);
   });
 
-  it('save button fires alert', () => {
-    const spy = jest.spyOn(Alert, 'alert');
-    const { getByTestId } = renderScreen();
+  it('save button calls updatePrivacy', async () => {
+    const { getByTestId } = await renderScreen();
     fireEvent.press(getByTestId('privacy-save-btn'));
-    expect(spy).toHaveBeenCalledWith('Saved', 'Privacy settings saved.');
+    await waitFor(() => expect(mockUpdatePrivacy).toHaveBeenCalled());
   });
 
-  it('back button calls goBack', () => {
-    const { getByTestId, nav } = renderScreen();
+  it('back button calls goBack', async () => {
+    const { getByTestId, nav } = await renderScreen();
     fireEvent.press(getByTestId('privacy-back-btn'));
     expect(nav.goBack).toHaveBeenCalled();
   });

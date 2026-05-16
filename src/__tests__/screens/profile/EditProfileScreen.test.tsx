@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import { EditProfileScreen } from '../../../screens/app/profile/EditProfileScreen';
 
@@ -34,6 +34,23 @@ const mockUser = {
 jest.mock('../../../store/auth.store', () => ({
   useAuthStore: (selector: (s: object) => unknown) =>
     selector({ user: mockUser }),
+}));
+
+const mockUpdateProfile = jest.fn().mockResolvedValue({ user: {} });
+
+jest.mock('../../../lib/api', () => ({
+  profileApi: {
+    updateProfile: (...args: unknown[]) => mockUpdateProfile(...args),
+  },
+  ApiError: class ApiError extends Error {
+    code: string;
+    status: number;
+    constructor(code: string, message: string, status: number) {
+      super(message);
+      this.code = code;
+      this.status = status;
+    }
+  },
 }));
 
 function makeNav() {
@@ -97,19 +114,20 @@ describe('EditProfileScreen', () => {
     ]);
   });
 
-  it('save success shows alert and calls goBack', () => {
-    const spy = jest.spyOn(Alert, 'alert');
+  it('save calls updateProfile and navigates back on success', async () => {
     const { getByTestId, nav } = renderScreen();
     fireEvent.changeText(getByTestId('edit-first-name'), 'Bron');
     fireEvent.press(getByTestId('edit-save-btn'));
-    expect(spy).toHaveBeenCalledWith(
-      'Saved',
-      'Your profile has been updated.',
-      expect.any(Array),
-    );
-    // invoke the OK callback
-    const buttons = spy.mock.calls[0][2] as { onPress?: () => void }[];
-    buttons[0].onPress?.();
+    await waitFor(() => expect(mockUpdateProfile).toHaveBeenCalled());
     expect(nav.goBack).toHaveBeenCalled();
+  });
+
+  it('save shows alert on API error', async () => {
+    const spy = jest.spyOn(Alert, 'alert');
+    mockUpdateProfile.mockRejectedValueOnce(new Error('Network error'));
+    const { getByTestId } = renderScreen();
+    fireEvent.changeText(getByTestId('edit-first-name'), 'Bron');
+    fireEvent.press(getByTestId('edit-save-btn'));
+    await waitFor(() => expect(spy).toHaveBeenCalledWith('Error', expect.any(String)));
   });
 });

@@ -47,3 +47,19 @@ export interface ProfileData {
   highestWin: HighestWin | null;
   topRival: TopRival | null;
 }
+
+export interface PrivacySettings {
+  showOnlineStatus: boolean;
+  showStats: boolean;
+  showRecentResults: boolean;
+  allowChallengesFrom: 'everyone' | 'friends' | 'nobody';
+}
+
+export interface StreamingChannel {
+  id: string;
+  provider: 'youtube' | 'twitch';
+  channelId: string;
+  channelName: string;
+  channelUrl: string;
+  connectedAt: string;
+}

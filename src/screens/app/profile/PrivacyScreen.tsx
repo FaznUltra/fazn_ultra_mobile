@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   Switch,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { ProfileStackParamList } from '../../../navigation/types';
@@ -23,6 +24,7 @@ import {
   PeopleIcon,
   TrophyIcon,
 } from '../../../components/profile/ProfileIcons';
+import { profileApi, ApiError } from '../../../lib/api';
 import { colors, spacing, radius } from '../../../theme';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'Privacy'>;
@@ -63,6 +65,8 @@ function ToggleRow({
 }
 
 export function PrivacyScreen({ navigation }: Props) {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [state, setState] = useState({
     publicProfile: true,
     onlineStatus: true,
@@ -76,6 +80,55 @@ export function PrivacyScreen({ navigation }: Props) {
 
   const set = (key: keyof typeof state) => (v: boolean) =>
     setState((prev) => ({ ...prev, [key]: v }));
+
+  const loadPrivacy = useCallback(async () => {
+    try {
+      const data = await profileApi.getPrivacy();
+      setState((prev) => ({
+        ...prev,
+        onlineStatus: data.showOnlineStatus,
+        matchHistory: data.showRecentResults,
+        acceptChallenges: data.allowChallengesFrom !== 'nobody',
+      }));
+    } catch {
+      // keep defaults on error
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadPrivacy();
+  }, [loadPrivacy]);
+
+  const onSave = async () => {
+    setSaving(true);
+    try {
+      await profileApi.updatePrivacy({
+        showOnlineStatus: state.onlineStatus,
+        showStats: state.publicProfile,
+        showRecentResults: state.matchHistory,
+        allowChallengesFrom: state.acceptChallenges ? 'everyone' : 'nobody',
+      });
+      Alert.alert('Saved', 'Privacy settings saved.');
+    } catch (err) {
+      const message =
+        err instanceof ApiError ? err.message : 'Failed to save. Please try again.';
+      Alert.alert('Error', message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <ScreenContainer testID="privacy-screen">
+        <View style={styles.center}>
+          <ActivityIndicator color={colors.primary} />
+        </View>
+      </ScreenContainer>
+    );
+  }
 
   return (
     <ScreenContainer testID="privacy-screen">
@@ -176,11 +229,10 @@ export function PrivacyScreen({ navigation }: Props) {
 
       <View style={styles.saveWrap}>
         <Button
-          title="Save"
+          title={saving ? 'Saving…' : 'Save'}
           testID="privacy-save-btn"
-          onPress={() =>
-            Alert.alert('Saved', 'Privacy settings saved.')
-          }
+          onPress={onSave}
+          disabled={saving}
         />
       </View>
     </ScreenContainer>
@@ -243,5 +295,10 @@ const styles = StyleSheet.create({
   saveWrap: {
     marginTop: spacing.xl,
     marginBottom: spacing.lg,
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
