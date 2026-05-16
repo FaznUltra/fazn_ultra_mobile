@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Animated,
+  Alert,
+  Linking,
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -58,17 +60,42 @@ export function AddFundsScreen({ navigation, route }: Props) {
 
   useEffect(() => {
     if (step !== 'processing') return;
+    if (!method) return;
+
+    let cancelled = false;
     setDone(false);
-    const t = setTimeout(() => {
-      setDone(true);
-      Animated.spring(checkScale, {
-        toValue: 1,
-        useNativeDriver: true,
-        friction: 5,
-      }).start();
-      if (method) void topUp(effectiveAmount, method);
-    }, 2000);
-    return () => clearTimeout(t);
+
+    (async () => {
+      try {
+        const resp = await topUp(effectiveAmount, method);
+        if (cancelled) return;
+
+        if (resp.authorizationUrl) {
+          // Hand off to Paystack checkout in the browser. The user returns
+          // to the app after paying; the webhook settles the balance.
+          await Linking.openURL(resp.authorizationUrl);
+        }
+
+        if (cancelled) return;
+        setDone(true);
+        Animated.spring(checkScale, {
+          toValue: 1,
+          useNativeDriver: true,
+          friction: 5,
+        }).start();
+      } catch (err) {
+        if (cancelled) return;
+        const message =
+          err instanceof Error ? err.message : 'Payment could not be started.';
+        Alert.alert('Payment failed', message, [
+          { text: 'OK', onPress: () => setStep('method') },
+        ]);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
@@ -96,9 +123,10 @@ export function AddFundsScreen({ navigation, route }: Props) {
             >
               <CheckIcon size={48} color="#fff" />
             </Animated.View>
-            <Text style={styles.successTitle}>Payment Successful!</Text>
+            <Text style={styles.successTitle}>Payment Initiated</Text>
             <Text style={styles.muted}>
-              +{formatNaira(effectiveAmount)} added to your wallet
+              {formatNaira(effectiveAmount)} top-up started — we&apos;ll
+              confirm and credit your wallet shortly
             </Text>
             <View style={styles.doneBtnWrap}>
               <Button

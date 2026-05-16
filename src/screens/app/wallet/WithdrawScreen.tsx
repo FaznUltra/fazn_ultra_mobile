@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Animated,
+  Alert,
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -49,19 +50,25 @@ export function WithdrawScreen({ navigation }: Props) {
   const bankComplete =
     accountName.trim() && accountNumber.trim() && bankName.trim();
 
-  const doWithdraw = () => {
+  const doWithdraw = async () => {
     const details: BankDetails = {
       accountName,
       accountNumber,
       bankName,
     };
-    void withdraw(amount, 'bank_transfer', details);
-    setSubmitted(true);
-    Animated.spring(checkScale, {
-      toValue: 1,
-      useNativeDriver: true,
-      friction: 5,
-    }).start();
+    try {
+      await withdraw(amount, 'bank_transfer', details);
+      setSubmitted(true);
+      Animated.spring(checkScale, {
+        toValue: 1,
+        useNativeDriver: true,
+        friction: 5,
+      }).start();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Withdrawal could not be processed.';
+      Alert.alert('Error', message);
+    }
   };
 
   if (submitted) {

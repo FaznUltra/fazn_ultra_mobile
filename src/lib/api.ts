@@ -300,4 +300,53 @@ export const profileApi = {
   },
 };
 
+/* ----------------------------- Wallet endpoints -------------------------- */
+
+import type { WalletData, Transaction } from '../types/wallet';
+
+export interface InitTopUpResponse {
+  reference: string;
+  authorizationUrl: string | null;
+}
+
+export interface WithdrawPayload {
+  amount: number;
+  accountName: string;
+  accountNumber: string;
+  bankName: string;
+}
+
+export const walletApi = {
+  getWallet(): Promise<WalletData> {
+    return rawRequest('/wallet', { auth: true });
+  },
+
+  getTransactions(
+    page = 1,
+    limit = 20,
+  ): Promise<{ transactions: Transaction[]; total: number; page: number; limit: number }> {
+    return rawRequest(`/wallet/transactions?page=${page}&limit=${limit}`, { auth: true });
+  },
+
+  initializeTopUp(amount: number, paymentMethod: string): Promise<InitTopUpResponse> {
+    return rawRequest('/wallet/topup', {
+      method: 'POST',
+      auth: true,
+      body: { amount, paymentMethod },
+    });
+  },
+
+  verifyTopUp(reference: string): Promise<{ status: string; transaction: Transaction }> {
+    return rawRequest('/wallet/topup/verify', {
+      method: 'POST',
+      auth: true,
+      body: { reference },
+    });
+  },
+
+  requestWithdrawal(payload: WithdrawPayload): Promise<{ transaction: Transaction }> {
+    return rawRequest('/wallet/withdraw', { method: 'POST', auth: true, body: payload });
+  },
+};
+
 export { rawRequest as __rawRequestForTests };

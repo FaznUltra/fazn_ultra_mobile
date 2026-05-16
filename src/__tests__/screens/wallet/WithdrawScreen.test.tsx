@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, fireEvent } from '@testing-library/react-native';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { WithdrawScreen } from '../../../screens/app/wallet/WithdrawScreen';
 import type { WalletData } from '../../../types/wallet';
 
@@ -98,7 +98,7 @@ describe('WithdrawScreen', () => {
     expect(u.getByTestId('confirm-withdrawal-btn')).toBeTruthy();
   });
 
-  it('confirm calls withdraw mutation', () => {
+  it('confirm calls withdraw mutation', async () => {
     const u = renderScreen();
     fireEvent.changeText(u.getByTestId('withdraw-amount-input'), '2000');
     fireEvent.press(u.getByTestId('withdraw-continue-btn'));
@@ -106,6 +106,6 @@ describe('WithdrawScreen', () => {
     fireEvent.press(u.getByTestId('submit-withdrawal-btn'));
     fireEvent.press(u.getByTestId('confirm-withdrawal-btn'));
     expect(mockWithdraw).toHaveBeenCalled();
-    expect(u.getByTestId('withdrawal-success')).toBeTruthy();
+    await waitFor(() => expect(u.getByTestId('withdrawal-success')).toBeTruthy());
   });
 });
