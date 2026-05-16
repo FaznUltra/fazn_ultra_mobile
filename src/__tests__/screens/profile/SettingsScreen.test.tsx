@@ -45,7 +45,6 @@ describe('SettingsScreen', () => {
     expect(getByTestId('settings-screen')).toBeTruthy();
     [
       'settings-change-password',
-      'settings-change-email',
       'settings-phone',
       'settings-2fa',
       'settings-language',

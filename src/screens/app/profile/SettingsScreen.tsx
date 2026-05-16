@@ -149,13 +149,6 @@ export function SettingsScreen({ navigation }: Props) {
         />
         <View style={styles.sep} />
         <NavRow
-          icon={<MailIcon />}
-          label="Change Email"
-          onPress={soon}
-          testID="settings-change-email"
-        />
-        <View style={styles.sep} />
-        <NavRow
           icon={<PhoneIcon />}
           label="Phone Number"
           onPress={soon}
