@@ -104,8 +104,8 @@ export function AddFundsScreen({ navigation, route }: Props) {
         }}
         onClose={() => {
           setPaystackUrl(null);
-          setMethod(null);
-          setStep('method');
+          void refreshWallet();
+          navigation.goBack();
         }}
       />
     );
