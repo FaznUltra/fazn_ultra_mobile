@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   Animated,
   Alert,
-  Linking,
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,6 +22,7 @@ import {
   WalletGlyph,
 } from '../../../components/wallet/WalletIcons';
 import { useWallet } from '../../../hooks/useWallet';
+import { PaystackSheet } from '../../../components/wallet/PaystackSheet';
 import { formatNaira, TOP_UP_PRESETS } from '../../../utils/wallet';
 import type { PaymentMethod } from '../../../types/wallet';
 
@@ -41,7 +41,7 @@ const METHODS: { id: PaymentMethod; name: string; sub: string }[] = [
 ];
 
 export function AddFundsScreen({ navigation, route }: Props) {
-  const { topUp } = useWallet();
+  const { topUp, refreshWallet } = useWallet();
 
   const presets = TOP_UP_PRESETS;
   const [step, setStep] = useState<Step>('amount');
@@ -51,6 +51,8 @@ export function AddFundsScreen({ navigation, route }: Props) {
   const [custom, setCustom] = useState('');
   const [method, setMethod] = useState<PaymentMethod | null>(null);
   const [done, setDone] = useState(false);
+  const [paystackUrl, setPaystackUrl] = useState<string | null>(null);
+  const [paystackRef, setPaystackRef] = useState('');
   const checkScale = useRef(new Animated.Value(0)).current;
 
   const methods = METHODS;
@@ -71,18 +73,18 @@ export function AddFundsScreen({ navigation, route }: Props) {
         if (cancelled) return;
 
         if (resp.authorizationUrl) {
-          // Hand off to Paystack checkout in the browser. The user returns
-          // to the app after paying; the webhook settles the balance.
-          await Linking.openURL(resp.authorizationUrl);
+          // Open Paystack inside the in-app sheet (no browser handoff)
+          setPaystackRef(resp.reference);
+          setPaystackUrl(resp.authorizationUrl);
+        } else {
+          // Mock mode (Paystack key not configured) — show success immediately
+          setDone(true);
+          Animated.spring(checkScale, {
+            toValue: 1,
+            useNativeDriver: true,
+            friction: 5,
+          }).start();
         }
-
-        if (cancelled) return;
-        setDone(true);
-        Animated.spring(checkScale, {
-          toValue: 1,
-          useNativeDriver: true,
-          friction: 5,
-        }).start();
       } catch (err) {
         if (cancelled) return;
         const message =
@@ -104,6 +106,27 @@ export function AddFundsScreen({ navigation, route }: Props) {
     setCustom('');
   };
 
+  // ---------- Paystack in-app sheet ----------
+  if (paystackUrl) {
+    return (
+      <PaystackSheet
+        visible
+        authorizationUrl={paystackUrl}
+        reference={paystackRef}
+        amount={effectiveAmount}
+        onSuccess={() => {
+          setPaystackUrl(null);
+          void refreshWallet();
+          navigation.goBack();
+        }}
+        onClose={() => {
+          setPaystackUrl(null);
+          setStep('method');
+        }}
+      />
+    );
+  }
+
   // ---------- Step 3: processing / success ----------
   if (step === 'processing') {
     return (
@@ -123,10 +146,9 @@ export function AddFundsScreen({ navigation, route }: Props) {
             >
               <CheckIcon size={48} color="#fff" />
             </Animated.View>
-            <Text style={styles.successTitle}>Payment Initiated</Text>
+            <Text style={styles.successTitle}>Top-up Queued</Text>
             <Text style={styles.muted}>
-              {formatNaira(effectiveAmount)} top-up started — we&apos;ll
-              confirm and credit your wallet shortly
+              {formatNaira(effectiveAmount)} will be credited once payment is confirmed
             </Text>
             <View style={styles.doneBtnWrap}>
               <Button
