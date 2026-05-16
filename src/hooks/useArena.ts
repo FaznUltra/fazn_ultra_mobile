@@ -587,6 +587,40 @@ export function useArena() {
     });
   }, []);
 
+  const startChallenge = useCallback((challengeId: string) => {
+    setState((prev) => {
+      if (prev.status !== 'success') return prev;
+      return {
+        status: 'success',
+        data: {
+          ...prev.data,
+          myChallenges: prev.data.myChallenges.map((c) =>
+            c.id === challengeId && c.status === 'accepted'
+              ? { ...c, status: 'live' }
+              : c,
+          ),
+        },
+      };
+    });
+  }, []);
+
+  const agreeToStart = useCallback((challengeId: string) => {
+    setState((prev) => {
+      if (prev.status !== 'success') return prev;
+      return {
+        status: 'success',
+        data: {
+          ...prev.data,
+          myChallenges: prev.data.myChallenges.map((c) =>
+            c.id === challengeId && c.status === 'accepted'
+              ? { ...c, status: 'live' }
+              : c,
+          ),
+        },
+      };
+    });
+  }, []);
+
   const submitResult = useCallback(
     (challengeId: string, outcome: Exclude<ChallengeOutcome, null>) => {
       setState((prev) => {
@@ -614,12 +648,30 @@ export function useArena() {
     [],
   );
 
+  const getChallengeById = useCallback(
+    (challengeId: string): ArenaChallenge | undefined => {
+      if (state.status !== 'success') return undefined;
+      return (
+        state.data.marketplace.find((c) => c.id === challengeId) ??
+        state.data.myChallenges.find((c) => c.id === challengeId) ??
+        state.data.invited.find((c) => c.id === challengeId)
+      );
+    },
+    [state],
+  );
+
   return {
     state,
     acceptInvite,
     rejectInvite,
     cancelChallenge,
     submitResult,
+    startChallenge,
+    agreeToStart,
+    acceptChallenge: acceptInvite,
+    rejectChallenge: rejectInvite,
+    getChallengeById,
     refresh: load,
+    retry: load,
   };
 }
