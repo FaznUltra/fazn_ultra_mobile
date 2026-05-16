@@ -3,6 +3,10 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { WalletScreen } from '../../../screens/app/wallet/WalletScreen';
 import type { WalletData } from '../../../types/wallet';
 
+jest.mock('@react-navigation/native', () => ({
+  useFocusEffect: (cb: () => void) => cb(),
+}));
+
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children, testID }: { children?: React.ReactNode; testID?: string }) => {
     const { View } = require('react-native');

@@ -8,6 +8,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from '../../../navigation/types';
 import { colors, spacing, radius } from '../../../theme';
@@ -22,6 +23,10 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'WalletMain'>;
 export function WalletScreen({ navigation }: Props) {
   const { state, refreshWallet } = useWallet();
   const scrollY = useRef(new Animated.Value(0)).current;
+
+  // Re-fetch balance every time this screen comes into focus so it's
+  // always fresh after returning from AddFunds / Withdraw.
+  useFocusEffect(React.useCallback(() => { void refreshWallet(); }, [refreshWallet]));
 
   if (state.status === 'loading' || state.status === 'idle') {
     return (
