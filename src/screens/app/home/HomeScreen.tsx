@@ -11,6 +11,7 @@ import {
   type FlatList as FlatListType,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 
 const FEATURED_CARD_WIDTH = Dimensions.get('window').width - 48;
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -21,6 +22,7 @@ import { ChallengeCard } from '../../../components/home/ChallengeCard';
 import { StreamCard } from '../../../components/home/StreamCard';
 import { HomeSkeleton } from '../../../components/home/HomeSkeleton';
 import { useHome } from '../../../hooks/useHome';
+import { useWallet } from '../../../hooks/useWallet';
 import { colors, spacing, radius } from '../../../theme';
 import type { Challenge, LiveStream } from '../../../types/home';
 
@@ -51,6 +53,9 @@ function SectionHeader({
 
 export function HomeScreen({ navigation }: Props) {
   const { state, retry, likeStream } = useHome();
+  const { state: walletState, refreshWallet } = useWallet();
+
+  useFocusEffect(useCallback(() => { void refreshWallet(); }, [refreshWallet]));
   const [activeStreamId, setActiveStreamId] = useState<string | null>(null);
 
   const flatListRef = useRef<FlatListType<LiveStream>>(null);
@@ -110,8 +115,8 @@ export function HomeScreen({ navigation }: Props) {
   const renderHeader = () => (
     <View>
       <HomeHeader
-        walletBalance={data.walletBalance}
-        walletCurrency={data.walletCurrency}
+        walletBalance={walletState.status === 'success' ? walletState.data.balance : null}
+        walletCurrency="₦"
         notificationCount={data.notificationCount}
         onSearchPress={() => navigation.navigate('GlobalSearch')}
         onNotificationPress={() => navigation.navigate('Notifications')}

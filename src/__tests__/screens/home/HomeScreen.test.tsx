@@ -3,6 +3,17 @@ import { render } from '@testing-library/react-native';
 import { HomeScreen } from '../../../screens/app/home/HomeScreen';
 import type { HomeData } from '../../../types/home';
 
+jest.mock('@react-navigation/native', () => ({
+  useFocusEffect: (cb: () => void) => cb(),
+}));
+
+jest.mock('../../../hooks/useWallet', () => ({
+  useWallet: () => ({
+    state: { status: 'success', data: { balance: 12500 } },
+    refreshWallet: jest.fn(),
+  }),
+}));
+
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaView: ({ children, testID }: { children?: React.ReactNode; testID?: string }) => {
     const { View } = require('react-native');
